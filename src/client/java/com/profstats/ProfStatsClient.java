@@ -82,23 +82,7 @@ public class ProfStatsClient implements ClientModInitializer {
         activeCraft.store();
 
         // Create a new craft instance with a new active craft; required when shift-clicking to do multiple crafts with the same action.
-        // When not shit-clicking it will be overwritten by a new craft when starting the new craft.
+        // When not shift-clicking it will be overwritten by a new craft when starting the new craft.
         activeCraft = activeCraft.copyCraftSetup();
     }
 }
-/*
-Locations are equal for the holograms (thank Salted for this)
-
-Can have multiple gathers active at once.
-Ideally, self-destruct once completed.
-Must be able to get a craft based on a location.
-
-Plan:
-Step 1:
-Detect all crafts within a certain area, send all to our craft as potential items.
-Step 2:
-DetectEntity -> For each 'active craft' check if location matches (and inner logic will select the correct craft; or if it doesn't find one _right away_ it will end itself)
-
-
-
-*/
