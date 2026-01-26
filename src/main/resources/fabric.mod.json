@@ -1,0 +1,37 @@
+{
+	"schemaVersion": 1,
+	"id": "profstats",
+	"version": "${version}",
+	"name": "ProfStats",
+	"description": "Tracks data for wynncraft professions",
+	"authors": [
+		"sjuka_legogubbar"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "CC0-1.0",
+	"icon": "assets/profstats/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"com.profstats.ProfStatsClient"
+		]
+	},
+	"mixins": [
+		{
+			"config": "profstats.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.17.2",
+		"minecraft": "~1.21.4",
+		"java": ">=21",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"another-mod": "*"
+	}
+}

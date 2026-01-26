@@ -1,0 +1,23 @@
+{
+	"required": true,
+	"package": "com.profstats.mixin.client",
+	"compatibilityLevel": "JAVA_21",
+	"client": [
+		"ChatPacketMixin",
+		"ScreenOpenMixin",
+		"SlotClickMixin",
+		"SlotUpdateMixin",
+		"SuppressNullEntityWarning",
+		"ActionBarMixin",
+		"PlayerInputPacketMixin",
+		"PlayerInteractEntityC2SPacketAccessor",
+		"MouseClickMixin",
+		"DisplayEntityMixin",
+		"PlayerListHudAccessor",
+		"InventoryDataMixin",
+		"SilentScreenMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}
