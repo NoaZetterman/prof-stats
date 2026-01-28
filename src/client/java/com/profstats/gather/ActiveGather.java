@@ -215,15 +215,15 @@ public class ActiveGather {
     public void store() {
         // If any data has changed, we don't know what was applied to the gather. 
         // So it will be cancelled by setting items to null, and hence cancel the entire gather
-        if (!gatherXpModifier.equals(GatherIdentificationBonus.readGatherXpBonus())) {
+        if (gatherXpModifier != null && !gatherXpModifier.equals(GatherIdentificationBonus.readGatherXpBonus())) {
             gatherXpModifier = null;
         }
 
-        if (!gatherSpeedModifier.equals(GatherIdentificationBonus.readGatherSpeedBonus())) {
+        if (gatherSpeedModifier != null && !gatherSpeedModifier.equals(GatherIdentificationBonus.readGatherSpeedBonus())) {
             gatherSpeedModifier = null;
         }
 
-        if (!isPvpActive.equals(UserData.isPvpActive())) {
+        if (isPvpActive != null && !isPvpActive.equals(UserData.isPvpActive())) {
             isPvpActive = null;
         }
 
