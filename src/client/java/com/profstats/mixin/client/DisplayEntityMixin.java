@@ -5,6 +5,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import com.profstats.ProfStatsClient;
 import com.profstats.gather.ActiveGather;
 
 import net.minecraft.client.MinecraftClient;
@@ -26,6 +27,12 @@ public class DisplayEntityMixin {
         Entity entity = mc.world.getEntityById(packet.id());
 
         // Try to detect gather when entity is updated
-        ActiveGather.detectGather(entity);
+        try {
+            ActiveGather.detectGather(entity);
+        } catch(Exception e) {
+            ProfStatsClient.LOGGER.info("[ProfStats] Caught exception when detecting gather:");
+            ProfStatsClient.LOGGER.warn(e.getMessage());
+            ActiveGather.reset();
+        }
     }
 }
