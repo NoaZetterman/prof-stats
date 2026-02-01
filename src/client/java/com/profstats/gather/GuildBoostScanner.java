@@ -35,7 +35,7 @@ public class GuildBoostScanner {
     public static void triggerScan() {
         MinecraftClient client = MinecraftClient.getInstance();
 
-        if (client.player != null && client.getNetworkHandler() != null) {
+        if (client.player != null && client.getNetworkHandler() != null && scanInProgress == false) {
             scanInProgress = true;
             client.getNetworkHandler().sendChatCommand("guild territory");
         }
