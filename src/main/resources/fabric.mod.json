@@ -5,13 +5,13 @@
 	"name": "ProfStats",
 	"description": "Tracks data for wynncraft professions",
 	"authors": [
-		"sjuka_legogubbar"
+		"Noa Zetterman"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"sources": "https://github.com/NoaZetterman/prof-stats",
+		"issues": "https://github.com/NoaZetterman/prof-stats/issues"
 	},
-	"license": "CC0-1.0",
+	"license": "MIT",
 	"icon": "assets/profstats/icon.png",
 	"environment": "client",
 	"entrypoints": {
@@ -30,8 +30,5 @@
 		"minecraft": "~1.21.4",
 		"java": ">=21",
 		"fabric-api": "*"
-	},
-	"suggests": {
-		"another-mod": "*"
 	}
 }
