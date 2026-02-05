@@ -1,5 +1,6 @@
 package com.profstats.gather;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -14,6 +15,7 @@ public class GuildBoostScanner {
     private static final Pattern PROFESSION_BOOST_PATTERN = Pattern.compile("^§d- §7Gathering Experience§8 \\[Lv\\. (\\d+)\\]$");
 
     private static boolean scanInProgress = false;
+    private static Instant scanStartedAt;
 
     private static int syncId = -1;
 
@@ -35,7 +37,8 @@ public class GuildBoostScanner {
     public static void triggerScan() {
         MinecraftClient client = MinecraftClient.getInstance();
 
-        if (client.player != null && client.getNetworkHandler() != null && scanInProgress == false) {
+        if (client.player != null && client.getNetworkHandler() != null && (scanInProgress == false || scanStartedAt.plusSeconds(1).isBefore(Instant.now()))) {
+            scanStartedAt = Instant.now();
             scanInProgress = true;
             client.getNetworkHandler().sendChatCommand("guild territory");
         }

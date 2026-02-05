@@ -132,7 +132,7 @@ public class ActiveGather {
             if (activeGather.guildGxpBoostLevel == null) {
                 activeGather.guildGxpBoostLevel = boostLevel;
             } else if (activeGather.guildGxpBoostLevel != boostLevel) {
-                // When scan before and after diff, we abort saving the gather as we don't know what was present when receiving the xp
+                // When scan before and after diff, we abort saving the boost level as we don't know what was present when receiving the xp
                 activeGather.guildGxpBoostLevel = null;
             }
         }
@@ -156,6 +156,18 @@ public class ActiveGather {
 
             if (activeGather.isAtLocation(entityPosition)) {
                 if (hologramText.contains(tickForProf.get(activeGather.getProfession()))) {
+
+                    // Avoid checking guild boost level if we recently checked it,
+                    // Also avoids an issue with GuildBoostScanner that would happen
+                    // when running two scans almost at the same time
+                    Integer guildGxpBoostLevel = null;
+                    for (ActiveGather ag : activeGathers.values()) {
+                        if (ag.guildGxpBoostLevel != null) {
+                            guildGxpBoostLevel = ag.guildGxpBoostLevel;
+                        }
+                    }
+                    activeGather.guildGxpBoostLevel = guildGxpBoostLevel;
+
                     activeGathers.put(entityPosition, activeGather);
                     it.remove();
                 }   
@@ -341,7 +353,10 @@ public class ActiveGather {
         gatherSpeedModifier = GatherIdentificationBonus.readGatherSpeedBonus();
         isPvpActive = UserData.isPvpActive();
 
-        GuildBoostScanner.triggerScan();
+        // Skip when copied over from what was detected in previous gather
+        if (guildGxpBoostLevel == null) {
+            GuildBoostScanner.triggerScan();
+        }
     }
 
     
@@ -411,5 +426,3 @@ public class ActiveGather {
     }
 }
 
-// TODO: Reading prof lvl while proffing seems to be broken...
-// sometimes it works? Check what's wrong?
