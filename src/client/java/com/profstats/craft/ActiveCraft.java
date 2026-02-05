@@ -43,9 +43,9 @@ public class ActiveCraft {
     private Profession profession;
     private Integer professionLevel; // Must set this when getting the XP (must read each time we do a craft even if we do multiple at once)
 
-    private Integer total_xp;
-    private Integer xp_multiplier;
-    private Integer level_percent;
+    private Integer totalXp;
+    private Integer xpMultiplier;
+    private Integer levelPercent;
 
     private Integer craftLevel; // Provided when craft finishes
 
@@ -96,9 +96,6 @@ public class ActiveCraft {
         this.ingredient6 = parseIngredient(screenHandler.getSlot(21).getStack(), MinecraftClient.getInstance().player);
 
         CraftingResultSlotTracker.setSlots(screenHandler);
-
-        // Maybe read existing items in the other slots so that we can detect the new craft level later on
-
     }
 
     /*
@@ -114,9 +111,9 @@ public class ActiveCraft {
 
         Matcher matcher = pattern.matcher(message);
         if(matcher.find()) {
-            this.xp_multiplier = matcher.group(1) != null ? (int) Double.parseDouble(matcher.group(1)) : 1;
-            this.total_xp = Integer.parseInt(matcher.group(2));
-            this.level_percent = Integer.parseInt(matcher.group(3));
+            this.xpMultiplier = matcher.group(1) != null ? (int) Double.parseDouble(matcher.group(1)) : 1;
+            this.totalXp = Integer.parseInt(matcher.group(2));
+            this.levelPercent = Integer.parseInt(matcher.group(3));
 
             return true;
         } else {
@@ -156,22 +153,31 @@ public class ActiveCraft {
             boolean fileExists = Files.exists(filePath);
 
             if(
-                profession == null || professionLevel == null || total_xp == null || 
-                xp_multiplier == null || level_percent == null || craftLevel == null ||
+                profession == null || professionLevel == null || totalXp == null || 
+                xpMultiplier == null || levelPercent == null || craftLevel == null ||
                 material1 == null || material2 == null
             ) {
+                // Only quit if we failed to detect the gather.
+                // Some data may be null if player exits gather screen before material is read
+                // Avoid logging as this is expected to happen when crafts are cancelled mid-craft
+                if (profession == null || totalXp == null) {
+                    return;
+                }
+
+
                 ProfStatsClient.LOGGER.info("""
-                    [ProfStats] Aborting craft scan because something null:
+                    [ProfStats] Something was null when scanning craft:
                     profession: %s
-                    professionLevel: %s
+                    profession_level: %s
                     total_xp: %s
                     xp_multiplier: %s
                     level_percent: %s
-                    craftlevel: %s
+                    craft_level: %s
                     material1: %s
                     material2: %s
-                """.formatted(profession, professionLevel, total_xp, xp_multiplier, level_percent, craftLevel, material1, material2));
-                return;
+                """.formatted(profession, professionLevel, totalXp, xpMultiplier, levelPercent, craftLevel, material1, material2));
+
+
             }
 
             try (BufferedWriter writer = Files.newBufferedWriter(filePath, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
@@ -205,9 +211,9 @@ public class ActiveCraft {
             toSafeCsv(Instant.now()),
             profession.displayName,
             toSafeCsv(professionLevel),
-            toSafeCsv(total_xp),
-            toSafeCsv(xp_multiplier),
-            toSafeCsv(level_percent),
+            toSafeCsv(totalXp),
+            toSafeCsv(xpMultiplier),
+            toSafeCsv(levelPercent),
             toSafeCsv(craftLevel),
             
             toSafeCsv(material1.level()), toSafeCsv(material1.tier()), toSafeCsv(material1.count()), toSafeCsv(material1.name()),

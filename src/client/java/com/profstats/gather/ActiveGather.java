@@ -217,11 +217,10 @@ public class ActiveGather {
 
         // If none above is found, we are at the initial state.
         state = GatherState.INITIAL;
-
     }
 
     public boolean isOld() {
-        return Duration.between(createdAt, Instant.now()).getSeconds() > 5; 
+        return Duration.between(createdAt, Instant.now()).getSeconds() > 5;
     }
 
     public void store() {
@@ -258,7 +257,7 @@ public class ActiveGather {
                 // Only log when there's an issue (missing totalXp happens when the gather was cancelled)
                 if (totalXp != null) {
                     ProfStatsClient.LOGGER.info("""
-                        [ProfStats] Aborting gather scan save because something null:
+                        [ProfStats] Something was null when scanning gather:
                         profession: %s
                         professionLevel: %s
                         totalXp: %s
@@ -274,7 +273,12 @@ public class ActiveGather {
                         toolDurability: %s
                     """.formatted(profession, professionLevel, totalXp, xpMultiplier, gatherXpModifier, isPvpActive, guildGxpBoostLevel, gatherSpeedModifier, levelPercent, nodeLevel, toolTier, toolSpeed, toolDurability));
                 }
-                return;
+
+                // If these have not been detected, the gather did not finish
+                if(profession == null || totalXp == null || nodeLevel == null) {
+                    return;
+                }
+                
             }
 
             try (BufferedWriter writer = Files.newBufferedWriter(filePath, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {

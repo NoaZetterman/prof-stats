@@ -20,13 +20,11 @@ public class ProfStatsClient implements ClientModInitializer {
     static ProfStatsClient instance;
 
     private ActiveCraft activeCraft;
-    private ActiveGather activeGather;
 
     private TerritoryManager territoryManager;
     
     @Override
     public void onInitializeClient() {
-        LOGGER.info("[ProfStats] Starting init");
         instance = this;
 
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
@@ -46,10 +44,6 @@ public class ProfStatsClient implements ClientModInitializer {
         return activeCraft;
     }
 
-    public ActiveGather getActiveGather() {
-        return activeGather;
-    }
-
     public TerritoryManager getTerritoryManager() {
         return this.territoryManager;
     }
@@ -67,6 +61,9 @@ public class ProfStatsClient implements ClientModInitializer {
     }
 
     public void cancelActiveCraft() {
+        if (activeCraft != null) {
+            activeCraft.store();
+        }
         activeCraft = null;
     }
 
