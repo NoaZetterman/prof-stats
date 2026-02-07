@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import com.profstats.apidata.TerritoryManager;
 import com.profstats.craft.ActiveCraft;
 import com.profstats.gather.ActiveGather;
+import com.profstats.migrations.Migrations;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
@@ -26,6 +27,9 @@ public class ProfStatsClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         instance = this;
+
+        // Migrate anything if required
+        Migrations.migrate();
 
         ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
             instance.waitForCharacterData();

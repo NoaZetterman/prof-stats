@@ -284,10 +284,10 @@ public class ActiveGather {
             try (BufferedWriter writer = Files.newBufferedWriter(filePath, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
                 // Write CSV header if new file
                 if (!fileExists) {
-                    String csvHeaders = "timestamp,profession,professionLevel,levelPercent,nodeLevel,";
-                    csvHeaders += "totalXp,xpMultiplier,xpModifier,pvpActive,guildGxpBoostLevel,speedModifier,ticks,";
-                    csvHeaders += "toolTier,toolSpeed,toolDurability,";
-                    csvHeaders += "materialTier,materialCount,materialName\n";
+                    String csvHeaders = "timestamp,profession,profession_level,level_percent,node_level,";
+                    csvHeaders += "total_xp,xp_multiplier,xp_modifier,pvp_active,guild_gxp_boost_level,speed_modifier,ticks,";
+                    csvHeaders += "tool_tier,tool_speed,tool_durability,";
+                    csvHeaders += "material_tier,material_count,material_name\n";
 
                     writer.write(csvHeaders);
                 }

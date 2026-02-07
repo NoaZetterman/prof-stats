@@ -183,16 +183,16 @@ public class ActiveCraft {
             try (BufferedWriter writer = Files.newBufferedWriter(filePath, StandardOpenOption.CREATE, StandardOpenOption.APPEND)) {
                 // Write CSV header if new file
                 if (!fileExists) {
-                    String csvHeaders = "timestamp,profession,professionLevel,total_xp,xp_multiplier,level_percent,craftLevel,";
-                    csvHeaders += "material1Level,material1Tier,material1Count,material1Name,";
-                    csvHeaders += "material2Level,material2Tier,material2Count,material2Name,";
+                    String csvHeaders = "timestamp,profession,profession_level,total_xp,xp_multiplier,level_percent,craft_level,";
+                    csvHeaders += "material1_level,material1_tier,material1_count,material1_name,";
+                    csvHeaders += "material2_level,material2_tier,material2_count,material2_name,";
 
-                    csvHeaders += "ingredient1Level,ingredient1Tier,ingredient1Name,";
-                    csvHeaders += "ingredient2Level,ingredient2Tier,ingredient2Name,";
-                    csvHeaders += "ingredient3Level,ingredient3Tier,ingredient3Name,";
-                    csvHeaders += "ingredient4Level,ingredient4Tier,ingredient4Name,";
-                    csvHeaders += "ingredient5Level,ingredient5Tier,ingredient5Name,";
-                    csvHeaders += "ingredient6Level,ingredient6Tier,ingredient6Name\n";
+                    csvHeaders += "ingredient1_level,ingredient1_tier,ingredient1_name,";
+                    csvHeaders += "ingredient2_level,ingredient2_tier,ingredient2_name,";
+                    csvHeaders += "ingredient3_level,ingredient3_tier,ingredient3_name,";
+                    csvHeaders += "ingredient4_level,ingredient4_tier,ingredient4_name,";
+                    csvHeaders += "ingredient5_level,ingredient5_tier,ingredient5_name,";
+                    csvHeaders += "ingredient6_level,ingredient6_tier,ingredient6_name\n";
 
                     writer.write(csvHeaders);
                 }
