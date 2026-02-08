@@ -26,7 +26,7 @@ import net.minecraft.util.math.Vec3d;
 
 public class ActiveGather {
     private static final Pattern GATHER_XP_PATTERN = Pattern.compile(
-        "(?:\\[x(\\d+)\\]\\s*)?" + // Xp multiplier part
+        "(?:\\[x(\\d+(?:\\.\\d+)?)\\]\\s*)?" + // Xp multiplier part
         "\\+(\\d+)\\s+[^ ]+\\s+([A-Za-z]+) XP \\[(\\d+(?:\\.\\d+)?)%\\]$"
     );
 
@@ -69,7 +69,7 @@ public class ActiveGather {
 
     private Integer totalXp;
 
-    private Integer xpMultiplier; 
+    private Double xpMultiplier; 
 
     private Integer gatherXpModifier;
     private Integer gatherSpeedModifier;
@@ -375,7 +375,7 @@ public class ActiveGather {
         }
 
         String multiplier_string = m.group(1);
-        xpMultiplier = multiplier_string != null ?  Integer.parseInt(multiplier_string) : 1;
+        xpMultiplier = multiplier_string != null ?  Double.parseDouble(multiplier_string) : 1;
         totalXp = Integer.parseInt(m.group(2));
         levelPercent = Double.parseDouble(m.group(4));
         state = GatherState.XP_GAIN;
