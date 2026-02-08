@@ -12,6 +12,8 @@ import net.minecraft.network.packet.s2c.play.EntityPassengersSetS2CPacket;
 /*
  * Minecraft creates a lot of warnings for invalid entity packets.
  * This suppresses these warnings in the logs to allow debugging.
+ * 
+ * NOTE: Only meant for development, and should not be used in the final mod
  */
 @Mixin(EntityPassengersSetS2CPacket.class)
 public class SuppressNullEntityWarning {

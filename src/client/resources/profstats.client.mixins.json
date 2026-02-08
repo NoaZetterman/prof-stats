@@ -7,7 +7,6 @@
 		"ScreenOpenMixin",
 		"SlotClickMixin",
 		"SlotUpdateMixin",
-		"SuppressNullEntityWarning",
 		"ActionBarMixin",
 		"PlayerInputPacketMixin",
 		"PlayerInteractEntityC2SPacketAccessor",
