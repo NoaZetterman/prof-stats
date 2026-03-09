@@ -14,10 +14,9 @@ import net.minecraft.client.Mouse;
 public class MouseClickMixin {
     @Inject(method = "onMouseButton", at = @At("HEAD"))
     private void onMouse(long window, int button, int action, int mods, CallbackInfo ci) {
-        if (action != GLFW.GLFW_PRESS) return;
-        if (button != GLFW.GLFW_MOUSE_BUTTON_LEFT &&
-            button != GLFW.GLFW_MOUSE_BUTTON_RIGHT) return;
-
-        GatherScanner.tryDetectGather(button);
+        // Detect only when left clicking, right clicking is detected in ClientRightClickEvent, as it requires detecting holding the button
+        if (action == GLFW.GLFW_PRESS && button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+            GatherScanner.tryDetectGather(button);
+        }
     }
 }

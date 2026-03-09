@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 
 import com.profstats.apidata.TerritoryManager;
 import com.profstats.craft.ActiveCraft;
+import com.profstats.event.RightClickEvent;
 import com.profstats.gather.ActiveGather;
 import com.profstats.migrations.Migrations;
 
@@ -36,6 +37,8 @@ public class ProfStatsClient implements ClientModInitializer {
         });
 
         territoryManager = new TerritoryManager();
+
+        RightClickEvent.register();
 
         LOGGER.info("[ProfStats] Initialized");
     }
