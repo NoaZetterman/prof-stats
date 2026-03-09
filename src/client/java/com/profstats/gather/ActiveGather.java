@@ -31,7 +31,7 @@ public class ActiveGather {
     );
 
     private static final Pattern GATHER_MATERIAL_PATTERN = Pattern.compile(
-        "\\+(\\d+)\\s+(.*?)§6 \\[§e(✫*)(?:§8✫*)?§6\\]$"
+        "(?m)^\\+(\\d+)\\s+(?:§.)*(.*?)(?:§6\\s*\\[§e(✫*)(?:§8✫*)?§6\\])?$"
     );
 
     private static final Pattern GATHER_COOLDOWN_PATTERN = Pattern.compile("^§\\d+s$");
@@ -388,7 +388,8 @@ public class ActiveGather {
 
         materialCount = Integer.parseInt(m.group(1));
         materialName = m.group(2).trim();
-        materialTier = m.group(3).length();
+        materialTier = m.group(3) != null ? m.group(3).length() : null;
+
         state = GatherState.XP_GAIN_WITH_ITEM;
 
         return true;
