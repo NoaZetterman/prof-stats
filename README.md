@@ -1,5 +1,6 @@
 ProfStats
 ========
+[![Modrinth](https://img.shields.io/modrinth/dt/profstats?label=modrinth)](https://modrinth.com/mod/profstats)
 [![GitHub](https://img.shields.io/github/downloads/NoaZetterman/prof-stats/total?logo=github)](https://github.com/NoaZetterman/prof-stats/releases)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://github.com/NoaZetterman/prof-stats/blob/master/LICENSE)
 
