@@ -1,16 +1,16 @@
 package com.profstats.mixin.client;
 
-import net.minecraft.client.gui.hud.PlayerListHud;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.components.PlayerTabOverlay;
+import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
 // Required to read footer for status effects
-@Mixin(PlayerListHud.class)
+@Mixin(PlayerTabOverlay.class)
 public interface PlayerListHudAccessor {
     @Accessor("footer")
-    Text getFooter();
+    Component getFooter();
 
     @Accessor("header")
-    Text getHeader();
+    Component getHeader();
 }

@@ -5,23 +5,28 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import com.profstats.ProfessionScanner;
 import com.profstats.gather.GuildBoostScanner;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.network.packet.c2s.play.CloseHandledScreenC2SPacket;
-import net.minecraft.network.packet.s2c.play.InventoryS2CPacket;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.network.protocol.game.ServerboundContainerClosePacket;
+import net.minecraft.network.protocol.game.ClientboundContainerSetContentPacket;
 
-@Mixin(ClientPlayNetworkHandler.class)
+@Mixin(ClientPacketListener.class)
 public abstract class InventoryDataMixin {
-    @Inject(method = "onInventory", at = @At("HEAD"))
-    private void onInventory(InventoryS2CPacket packet, CallbackInfo ci) {
-        if (packet.getSyncId() == GuildBoostScanner.getSyncId() && GuildBoostScanner.hasActiveScan()) {
-            GuildBoostScanner.scanInventory(packet.getContents());
+    @Inject(method = "handleContainerContent", at = @At("HEAD"))
+    private void onInventory(ClientboundContainerSetContentPacket packet, CallbackInfo ci) {
+        if (packet.containerId() == GuildBoostScanner.getSyncId() && GuildBoostScanner.hasActiveScan()) {
+            GuildBoostScanner.scanInventory(packet.items());
 
-            MinecraftClient.getInstance().getNetworkHandler()
-                .sendPacket(new CloseHandledScreenC2SPacket(packet.getSyncId()));
+            Minecraft.getInstance().getConnection()
+                .send(new ServerboundContainerClosePacket(packet.containerId()));
+        } else if (packet.containerId() == ProfessionScanner.getSyncId() && ProfessionScanner.hasActiveScan())  {
+            ProfessionScanner.scanScreen(packet.items());
+
+            Minecraft.getInstance().getConnection()
+                .send(new ServerboundContainerClosePacket(packet.containerId()));
         }
     }
 }
-

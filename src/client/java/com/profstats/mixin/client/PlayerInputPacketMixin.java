@@ -12,22 +12,22 @@ import com.profstats.ProfessionScanner;
 import com.profstats.pendingaction.InteractEntityAction;
 import com.profstats.pendingaction.PendingAction;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientCommonNetworkHandler;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.decoration.DisplayEntity.TextDisplayEntity;
-import net.minecraft.network.packet.Packet;
-import net.minecraft.network.packet.c2s.play.PlayerInteractEntityC2SPacket;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientCommonPacketListenerImpl;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Display.TextDisplay;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ServerboundInteractPacket;
+import net.minecraft.network.chat.Component;
 
-@Mixin(ClientCommonNetworkHandler.class)
+@Mixin(ClientCommonPacketListenerImpl.class)
 public class PlayerInputPacketMixin {
-    @Inject(method = "sendPacket(Lnet/minecraft/network/packet/Packet;)V", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "send(Lnet/minecraft/network/protocol/Packet;)V", at = @At("HEAD"), cancellable = true)
     private void onSendPacket(Packet<?> packet, CallbackInfo ci) {
-        if (packet instanceof PlayerInteractEntityC2SPacket p) {
-            if(ProfessionScanner.isScanInProgress()) {
+        if (packet instanceof ServerboundInteractPacket p) {
+            if(ProfessionScanner.hasActiveScan()) {
                 ProfessionScanner.addToPendingActionQueue(packet);
                 ci.cancel();
             } else if (ProfessionScanner.shouldTriggerScan()) {
@@ -50,24 +50,25 @@ public class PlayerInputPacketMixin {
      * at worst we get false positives and read the profession data too early.
      */
     private boolean isEntityProfessionStation(int entityId) {
-        MinecraftClient client = MinecraftClient.getInstance();
-        ClientWorld world = client.world;
+        Minecraft client = Minecraft.getInstance();
+        ClientLevel world = client.level;
 
         if (world == null) return false;
             
-        Entity entity = world.getEntityById(entityId);
+        Entity entity = world.getEntity(entityId);
 
         if (entity == null) return false;
         if (entity.getType() != EntityType.INTERACTION) return false;
 
-        List<TextDisplayEntity> displayEntities = world.getEntitiesByClass(
-            TextDisplayEntity.class, 
-            entity.getBoundingBox().offset(0,1,0), 
-            (textDisplay) -> true);
+        List<TextDisplay> displayEntities = world.getEntitiesOfClass(
+            TextDisplay.class, 
+            entity.getBoundingBox().move(0,1,0), 
+            (textDisplay) -> true
+        );
 
 
-        for(TextDisplayEntity textDisplayEntity : displayEntities) {
-            Text displayedText = textDisplayEntity.getText();
+        for(TextDisplay textDisplayEntity : displayEntities) {
+            Component displayedText = textDisplayEntity.getText();
             if (displayedText != null) {
                 if(Profession.professionMentioned(displayedText.getString())) {
                     return true;

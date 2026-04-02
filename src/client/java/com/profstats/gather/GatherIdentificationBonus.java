@@ -7,12 +7,12 @@ import java.util.regex.Pattern;
 import com.profstats.ProfStatsClient;
 import com.profstats.mixin.client.PlayerListHudAccessor;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.item.Item.TooltipContext;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.tooltip.TooltipType;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.item.Item.TooltipContext;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.network.chat.Component;
 
 /*
  * Helper class to read gathering XP and speed bonus
@@ -22,7 +22,7 @@ public class GatherIdentificationBonus {
     private static final Pattern IDENTIFICATION_GXP_PATTERN = Pattern.compile("([+-]\\d+)\\%§8\\/(-?\\d+)\\%\\s*Gather XP Bonus");
     private static final Pattern IDENTIFICATION_GSPEED_PATTERN = Pattern.compile("([+-]\\d+)\\%§8\\/(-?\\d+)\\%\\s*Gather Speed");
     private static final Pattern POSITIVE_IDENTIFICATION_VALUE_PATTERN = Pattern.compile("^\\+(\\d+)\\%§8\\/(\\d+)\\%\\s");
-    private static final Pattern CRAFTED_DEGRADATION_PERCENTAGE = Pattern.compile("\\[(\\d+)\\%\\]$");
+    private static final Pattern CRAFTED_DEGRADATION_PERCENTAGE = Pattern.compile("\\[(\\d+)\\%\\ injection\\]$");
 
     private static final Pattern STATUS_EFFECT_GXP_PATTERN = Pattern.compile("([+-]?\\d+)% Gather XP Bonus");
     private static final Pattern STATUS_EFFECT_GSPEED_PATTERN = Pattern.compile("([+-]?\\d+)% Gather Speed");
@@ -35,15 +35,15 @@ public class GatherIdentificationBonus {
 
     public static Integer readGatherSpeedBonus() {
         int gatherSpeedBonus = 0;
-        MinecraftClient client = MinecraftClient.getInstance();
-        ClientPlayerEntity player = client.player;
+        Minecraft client = Minecraft.getInstance();
+        LocalPlayer player = client.player;
 
         if (player == null) return null;
-        if (client.world == null) return null;
+        if (client.level == null) return null;
 
         
         for(int equipmentIdx : EQUIPMENT_INDEXES) {
-            Integer gatheringSpeed = identificationStat(player.getInventory().getStack(equipmentIdx), player, IDENTIFICATION_GSPEED_PATTERN);
+            Integer gatheringSpeed = identificationStat(player.getInventory().getItem(equipmentIdx), player, IDENTIFICATION_GSPEED_PATTERN);
 
             if (gatheringSpeed == null) {
                 return null;
@@ -59,14 +59,14 @@ public class GatherIdentificationBonus {
     // Detect XP from gear + consus and other status effects
     public static Integer readGatherXpBonus() {
         int gatherXpBonus = 0;
-        MinecraftClient client = MinecraftClient.getInstance();
-        ClientPlayerEntity player = client.player;
+        Minecraft client = Minecraft.getInstance();
+        LocalPlayer player = client.player;
 
         if (player == null) return null;
-        if (client.world == null) return null;
+        if (client.level == null) return null;
 
         for(int equipmentIdx : EQUIPMENT_INDEXES) {
-            Integer gatheringXp = identificationStat(player.getInventory().getStack(equipmentIdx), player, IDENTIFICATION_GXP_PATTERN);
+            Integer gatheringXp = identificationStat(player.getInventory().getItem(equipmentIdx), player, IDENTIFICATION_GXP_PATTERN);
 
             if (gatheringXp == null) {
                 return null;
@@ -78,7 +78,7 @@ public class GatherIdentificationBonus {
         int charmXp = 0;
 
         for(int i = 0; i <= 6; i++) {
-            List<Text> tooltip = player.getInventory().getStack(i).getTooltip(TooltipContext.DEFAULT, player, TooltipType.BASIC);
+            List<Component> tooltip = player.getInventory().getItem(i).getTooltipLines(TooltipContext.EMPTY, player, TooltipFlag.Default.NORMAL);
             if (tooltip.get(0).getString().equals("Charm of the Void")) {
                 Matcher m = CHARM_GXP_PATTERN.matcher(tooltip.get(6).getString());
                 if (m.find()) {
@@ -92,7 +92,7 @@ public class GatherIdentificationBonus {
         }
 
         for(int i = 13; i < 35; i++) {
-            List<Text> tooltip = player.getInventory().getStack(i).getTooltip(TooltipContext.DEFAULT, player, TooltipType.BASIC);
+            List<Component> tooltip = player.getInventory().getItem(i).getTooltipLines(TooltipContext.EMPTY, player, TooltipFlag.Default.NORMAL);
             if (tooltip.get(0).getString().equals("Charm of the Void")) {
                 Matcher m = CHARM_GXP_PATTERN.matcher(tooltip.get(6).getString());
                 if (m.find()) {
@@ -111,8 +111,8 @@ public class GatherIdentificationBonus {
         return gatherXpBonus;
     }
 
-    private static Integer identificationStat(ItemStack item, ClientPlayerEntity player, Pattern identification_pattern) {
-        List<Text> tooltip = item.getTooltip(TooltipContext.DEFAULT, player, TooltipType.BASIC);
+    private static Integer identificationStat(ItemStack item, LocalPlayer player, Pattern identification_pattern) {
+        List<Component> tooltip = item.getTooltipLines(TooltipContext.EMPTY, player, TooltipFlag.Default.NORMAL);
 
         for (int i = 0; i < tooltip.size(); i++) {
             Matcher m = identification_pattern.matcher(tooltip.get(i).getString());
@@ -138,7 +138,7 @@ public class GatherIdentificationBonus {
      * 
      * Sorry for a huge method but I can't be assed to refactor it properly. This should probably be its own module...
      */
-    private static Integer degradedValue(ItemStack itemStack, ClientPlayerEntity player, int displayedValue, int baseValue) {
+    private static Integer degradedValue(ItemStack itemStack, LocalPlayer player, int displayedValue, int baseValue) {
         double deg1 = 0.005;
         double deg2 = 0.010;
         double deg3 = 0.015;
@@ -149,7 +149,7 @@ public class GatherIdentificationBonus {
 
         int degradationPercent = 100;
 
-        List<Text> tooltip = itemStack.getTooltip(TooltipContext.DEFAULT, player, TooltipType.BASIC);
+        List<Component> tooltip = itemStack.getTooltipLines(TooltipContext.EMPTY, player, TooltipFlag.Default.NORMAL);
 
         
         Matcher degradationPercentMatcher = CRAFTED_DEGRADATION_PERCENTAGE.matcher(tooltip.get(0).getString());
@@ -196,14 +196,14 @@ public class GatherIdentificationBonus {
 
                 // Iterate over all identifications to find if one differs between the two multipliers
                 for (int j = 1; j < tooltip.size()-2; j++) {
-                    Matcher m = POSITIVE_IDENTIFICATION_VALUE_PATTERN.matcher(tooltip.get(i).getString());
+                    Matcher m = POSITIVE_IDENTIFICATION_VALUE_PATTERN.matcher(tooltip.get(j).getString());
                     if (m.find()) {
                         int degraded = Integer.parseInt(m.group(1));
                         int base = Integer.parseInt(m.group(2));
 
                         if (((int) (base * multiplierNext)) != ((int) (base * multiplier))) {
                             if (((int) (base * multiplier)) == degraded) {
-                                return actualNext;
+                                return actual;
                             }
 
                             if (((int) (base * multiplierNext)) == degraded) {
@@ -287,12 +287,12 @@ public class GatherIdentificationBonus {
     private static int readStatusEffectBonus(Pattern effectPattern) {
         int effectBonus = 0;
 
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         
-        if (client.inGameHud != null) {
-            var playerListHud = client.inGameHud.getPlayerListHud();
+        if (client.gui != null) {
+            var playerListHud = client.gui.getTabList();
             
-            Text footer = ((PlayerListHudAccessor) playerListHud).getFooter();
+            Component footer = ((PlayerListHudAccessor) playerListHud).getFooter();
             
             if (footer != null) {
                 String footerText = footer.getString();

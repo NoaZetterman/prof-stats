@@ -5,17 +5,17 @@ import org.lwjgl.glfw.GLFW;
 import com.profstats.gather.GatherScanner;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 
 public class RightClickEvent {
     public static void register() {
         ClientTickEvents.END_CLIENT_TICK.register(RightClickEvent::onTick);
     }
 
-    private static void onTick(MinecraftClient client) {
-        if (client.player == null || client.currentScreen != null) return;
+    private static void onTick(Minecraft client) {
+        if (client.player == null || client.screen != null) return;
 
-        long window = client.getWindow().getHandle();
+        long window = client.getWindow().handle();
         
         // Detect when either clicking or holding rightclick. Left click is detected using the MouseClickMixin
         if (GLFW.glfwGetMouseButton(window, GLFW.GLFW_MOUSE_BUTTON_RIGHT) == GLFW.GLFW_PRESS) {

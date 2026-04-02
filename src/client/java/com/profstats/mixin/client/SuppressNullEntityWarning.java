@@ -6,8 +6,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.network.packet.s2c.play.EntityPassengersSetS2CPacket;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.network.protocol.game.ClientboundSetPassengersPacket;
+import net.minecraft.network.protocol.game.ClientGamePacketListener;
 
 /*
  * Minecraft creates a lot of warnings for invalid entity packets.
@@ -15,18 +16,18 @@ import net.minecraft.network.packet.s2c.play.EntityPassengersSetS2CPacket;
  * 
  * NOTE: Only meant for development, and should not be used in the final mod
  */
-@Mixin(EntityPassengersSetS2CPacket.class)
+@Mixin(ClientboundSetPassengersPacket.class)
 public class SuppressNullEntityWarning {
-    @Shadow private int entityId;
+    @Shadow private int vehicle;
 
     @Inject(
-      method = "apply(Lnet/minecraft/network/listener/ClientPlayPacketListener;)V",
+      method = "handle(Lnet/minecraft/network/protocol/game/ClientGamePacketListener;)V",
       at = @At("HEAD"),
       cancellable = true
     )
-    private void onApply(net.minecraft.network.listener.ClientPlayPacketListener listener, CallbackInfo ci) {
-        if (listener instanceof ClientPlayNetworkHandler handler) {
-            if (handler.getWorld() != null && handler.getWorld().getEntityById(entityId) == null) {
+    private void onApply(ClientGamePacketListener listener, CallbackInfo ci) {
+        if (listener instanceof ClientPacketListener handler) {
+            if (handler.getLevel() != null && handler.getLevel().getEntity(vehicle) == null) {
                 ci.cancel();
             }
         }

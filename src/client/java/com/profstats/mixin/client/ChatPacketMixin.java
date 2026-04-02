@@ -1,7 +1,7 @@
 package com.profstats.mixin.client;
 
-import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.network.packet.s2c.play.GameMessageS2CPacket;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.network.protocol.game.ClientboundSystemChatPacket;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -15,12 +15,12 @@ import com.profstats.craft.ActiveCraft;
 import com.profstats.gather.ActiveGather;
 import com.profstats.gather.GuildBoostScanner;
 
-@Mixin(ClientPlayNetworkHandler.class)
+@Mixin(ClientPacketListener.class)
 public class ChatPacketMixin {
     private String lastMessage = "";
 
-    @Inject(method = "onGameMessage", at = @At("HEAD"), cancellable = true)
-    private void onGameMessage(GameMessageS2CPacket packet, CallbackInfo ci) {
+    @Inject(method = "handleSystemChat", at = @At("HEAD"), cancellable = true)
+    private void onGameMessage(ClientboundSystemChatPacket packet, CallbackInfo ci) {
         String message = packet.content().getString();
 
         // Avoid double messages, it's very unlikely two crafts get the same xp after one another with no other messages in between

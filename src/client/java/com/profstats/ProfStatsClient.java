@@ -11,15 +11,15 @@ import com.profstats.migrations.Migrations;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.ItemStack;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.ItemStack;
 
 public class ProfStatsClient implements ClientModInitializer {
     public static final String MOD_ID = "profstats";
-	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+    public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
 
-    static ProfStatsClient instance;
+    private static ProfStatsClient instance;
 
     private ActiveCraft activeCraft;
 
@@ -64,7 +64,6 @@ public class ProfStatsClient implements ClientModInitializer {
         activeCraft = null;
         ActiveGather.reset();
         ProfessionScanner.startWaitForScan();
-
     }
 
     public void cancelActiveCraft() {
@@ -74,7 +73,7 @@ public class ProfStatsClient implements ClientModInitializer {
         activeCraft = null;
     }
 
-    public void finishActiveCraft(ItemStack craftReward, PlayerEntity player) {
+    public void finishActiveCraft(ItemStack craftReward, Player player) {
         Integer foundLevel = activeCraft.setCraftLevel(craftReward, player);
 
         // May happen when the user clicks in the area where new crafted items are placed

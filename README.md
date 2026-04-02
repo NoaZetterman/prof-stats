@@ -6,7 +6,7 @@ ProfStats
 
 ProfStats is a client-side Wynncraft mod that automatically tracks profession gathering and crafting data locally while you play. The data is stored per-instance in `.minecraft/data/prof-stats/`.
 
-ProfStats supports Minecraft 1.21.4, and uses **Fabric**. 
+ProfStats supports Minecraft 1.21.11, and uses **Fabric**. 
 
 Download a release
 ========

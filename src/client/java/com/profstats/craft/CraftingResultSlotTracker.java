@@ -4,8 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import net.minecraft.item.ItemStack;
-import net.minecraft.screen.ScreenHandler;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.inventory.AbstractContainerMenu;
 
 /*
  * Track current state of itemstacks
@@ -20,9 +20,9 @@ public class CraftingResultSlotTracker {
     
     private static final Map<Integer, ItemStack> lastStacks = new HashMap<>();
 
-    public static void setSlots(ScreenHandler screenHandler) {
+    public static void setSlots(AbstractContainerMenu screenHandler) {
         for(int i : RESULT_SLOTS) {
-            setSlot(i, screenHandler.getSlot(i).getStack().copy());
+            setSlot(i, screenHandler.getSlot(i).getItem().copy());
         }
     }
 

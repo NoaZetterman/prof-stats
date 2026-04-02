@@ -10,32 +10,32 @@ import com.profstats.Profession;
 import com.profstats.ProfessionScanner;
 import com.profstats.pendingaction.NoAction;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.entity.decoration.DisplayEntity.TextDisplayEntity;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.Item.TooltipContext;
-import net.minecraft.item.tooltip.TooltipType;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.world.entity.Display.TextDisplay;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Item.TooltipContext;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.level.Level;
 
 public class GatherScanner {
 
     public static void tryDetectGather(int button) {
-        MinecraftClient client = MinecraftClient.getInstance();
-        ClientPlayerEntity player = client.player;
+        Minecraft client = Minecraft.getInstance();
+        LocalPlayer player = client.player;
 
         if (player == null) return;
-        if (client.world == null) return;
-        if (client.currentScreen != null) return;
+        if (client.level == null) return;
+        if (client.screen != null) return;
 
-        ItemStack mainHandItem = player.getMainHandStack();
+        ItemStack mainHandItem = player.getMainHandItem();
 
-        if (mainHandItem == null) return;
+        if (mainHandItem.isEmpty()) return;
 
-        String itemName = mainHandItem.getName().getString();
+        String itemName = mainHandItem.getHoverName().getString();
         if (!itemName.contains("Gathering")) return;
 
         if(ProfessionScanner.shouldTriggerScan()) {
@@ -53,14 +53,14 @@ public class GatherScanner {
         }
     }
 
-    private static void detectGather(ClientPlayerEntity player, ItemStack itemStack, Profession profession) {
-        World world = player.getWorld();
+    private static void detectGather(LocalPlayer player, ItemStack itemStack, Profession profession) {
+        Level world = player.level();
 
         if (player == null || world == null) return;
 
-        Map<Vec3d, Integer> locations = findLocations(player, profession);
+        Map<Vec3, Integer> locations = findLocations(player, profession);
 
-        List<Text> tooltip = itemStack.getTooltip(TooltipContext.DEFAULT, player, TooltipType.BASIC);
+        List<Component> tooltip = itemStack.getTooltipLines(TooltipContext.EMPTY, player, TooltipFlag.Default.NORMAL);
 
         
         if (locations.size() > 0) {
@@ -68,21 +68,21 @@ public class GatherScanner {
         }
     }
 
-    private static Map<Vec3d, Integer> findLocations(ClientPlayerEntity player, Profession profession) {
+    private static Map<Vec3, Integer> findLocations(LocalPlayer player, Profession profession) {
         
-        World world = player.getWorld();
+        Level world = player.level();
 
-        Vec3d playerPosition = player.getCameraPosVec(1.0f);
-        Box box = new Box(playerPosition, playerPosition).expand(5.0f);
+        Vec3 playerPosition = player.getEyePosition(1.0f);
+        AABB box = new AABB(playerPosition, playerPosition).inflate(5.0f);
 
-        List<TextDisplayEntity> displays =
-            world.getEntitiesByClass(
-                TextDisplayEntity.class,
+        List<TextDisplay> displays =
+            world.getEntitiesOfClass(
+                TextDisplay.class,
                 box,
                 e -> true
         );
 
-        Map<Vec3d, Integer> locations = new HashMap<>();
+        Map<Vec3, Integer> locations = new HashMap<>();
 
         Pattern level_pattern = Pattern.compile(profession.displayName + " Lv\\. Min: (?:§f)?(\\d+)"); // Could also add some more to this
 
@@ -91,7 +91,7 @@ public class GatherScanner {
             if (displayEntity.getText().getString().contains(profession.displayName)) {
                 Matcher m = level_pattern.matcher(displayEntity.getText().getString());
                 if (m.find()) {
-                    locations.put(displayEntity.getPos(), Integer.parseInt(m.group(1)));
+                    locations.put(displayEntity.position(), Integer.parseInt(m.group(1)));
                 }
             }
         });

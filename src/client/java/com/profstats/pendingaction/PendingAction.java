@@ -1,6 +1,6 @@
 package com.profstats.pendingaction;
 
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 
 /*
  * This class should be inherited when we want to intercept the action
@@ -10,5 +10,5 @@ import net.minecraft.client.MinecraftClient;
  * 
  */
 public abstract class PendingAction {
-    public abstract void execute(MinecraftClient client);
+    public abstract void execute(Minecraft client);
 }

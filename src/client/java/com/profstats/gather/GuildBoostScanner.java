@@ -5,11 +5,11 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.item.Item.TooltipContext;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.tooltip.TooltipType;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.item.Item.TooltipContext;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.network.chat.Component;
 
 public class GuildBoostScanner {
     private static final Pattern PROFESSION_BOOST_PATTERN = Pattern.compile("^§d- §7Gathering Experience§8 \\[Lv\\. (\\d+)\\]$");
@@ -35,12 +35,12 @@ public class GuildBoostScanner {
     }
 
     public static void triggerScan() {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
 
-        if (client.player != null && client.getNetworkHandler() != null && (scanInProgress == false || scanStartedAt.plusSeconds(1).isBefore(Instant.now()))) {
+        if (client.player != null && client.getConnection() != null && (scanInProgress == false || scanStartedAt.plusSeconds(1).isBefore(Instant.now()))) {
             scanStartedAt = Instant.now();
             scanInProgress = true;
-            client.getNetworkHandler().sendChatCommand("guild territory");
+            client.getConnection().sendCommand("guild territory");
         }
     }
 
@@ -49,12 +49,11 @@ public class GuildBoostScanner {
         ActiveGather.setGuildGxpBoostLevel(boostLevel);
         GuildBoostScanner.syncId = -1;
         scanInProgress = false;
-
     }
 
     private static Integer parseGuildXpBoost(ItemStack professionItemStack) {
-        List<Text> tooltip = professionItemStack.getTooltip(TooltipContext.DEFAULT, MinecraftClient.getInstance().player, TooltipType.BASIC);
-        for (Text line : tooltip) {
+        List<Component> tooltip = professionItemStack.getTooltipLines(TooltipContext.EMPTY, Minecraft.getInstance().player, TooltipFlag.Default.NORMAL);
+        for (Component line : tooltip) {
             String s = line.getString();
             Matcher m = PROFESSION_BOOST_PATTERN.matcher(s);
 
