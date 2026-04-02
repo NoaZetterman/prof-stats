@@ -55,10 +55,17 @@ public class TerritoryManager {
     }
 
     private void saveToDisk() {
-        try (Writer writer = Files.newBufferedWriter(CACHE_FILE)) {
-            CacheData data = new CacheData(lastUpdate, territoryNames);
-            new Gson().toJson(data, writer);
-        } catch (IOException e) { e.printStackTrace(); }
+        try {
+            // Ensure the prof-stats directory exists before writing
+            Files.createDirectories(CACHE_FILE.getParent());
+            
+            try (Writer writer = Files.newBufferedWriter(CACHE_FILE)) {
+                CacheData data = new CacheData(lastUpdate, territoryNames);
+                new Gson().toJson(data, writer);
+            }
+        } catch (IOException e) { 
+            e.printStackTrace(); 
+        }
     }
 
     private void loadFromDisk() {
@@ -75,4 +82,3 @@ public class TerritoryManager {
         CacheData(long ts, Set<String> n) { this.timestamp = ts; this.names = n; }
     }
 }
-
