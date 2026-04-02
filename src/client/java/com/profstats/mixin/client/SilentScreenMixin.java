@@ -8,17 +8,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import com.profstats.ProfStatsClient;
 import com.profstats.gather.GuildBoostScanner;
 
-import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.network.packet.s2c.play.OpenScreenS2CPacket;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.network.protocol.game.ClientboundOpenScreenPacket;
 
-@Mixin(ClientPlayNetworkHandler.class)
+@Mixin(ClientPacketListener.class)
 public abstract class SilentScreenMixin {
-    @Inject(method = "onOpenScreen", at = @At("HEAD"), cancellable = true)
-    private void onOpenScreen(OpenScreenS2CPacket packet, CallbackInfo ci) {
-        String screenTitle = packet.getName().getString();
+    @Inject(method = "handleOpenScreen", at = @At("HEAD"), cancellable = true)
+    private void onOpenScreen(ClientboundOpenScreenPacket packet, CallbackInfo ci) {
+        String screenTitle = packet.getTitle().getString();
 
         if (GuildBoostScanner.hasActiveScan() && ProfStatsClient.getInstance().getTerritoryManager().isTerritory(screenTitle)) {
-            GuildBoostScanner.setSyncId(packet.getSyncId());
+            GuildBoostScanner.setSyncId(packet.getContainerId());
             
             // Cancel the packet so MinecraftClient.setScreen() is never called
             ci.cancel(); 

@@ -9,15 +9,15 @@ import com.profstats.ProfStatsClient;
 import com.profstats.Profession;
 import com.profstats.UserData;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.item.Item.TooltipContext;
-import net.minecraft.item.ItemStack;
-import net.minecraft.item.tooltip.TooltipType;
-import net.minecraft.screen.ScreenHandler;
-import net.minecraft.text.Text;
-import net.minecraft.text.TextColor;
-import net.minecraft.util.Formatting;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item.TooltipContext;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextColor;
+import net.minecraft.ChatFormatting;
 
 import java.nio.file.*;
 import java.time.Instant;
@@ -84,16 +84,16 @@ public class ActiveCraft {
     * Ingredient slot 5 (bottom left): 20
     * Ingredient slot 6 (top right): 21
     */
-    public void setCraftItems(ScreenHandler screenHandler) {
-        this.material1 = parseMaterial(screenHandler.getSlot(0).getStack(), MinecraftClient.getInstance().player);
-        this.material2 = parseMaterial(screenHandler.getSlot(9).getStack(), MinecraftClient.getInstance().player);
+    public void setCraftItems(AbstractContainerMenu screenHandler) {
+        this.material1 = parseMaterial(screenHandler.getSlot(0).getItem(), Minecraft.getInstance().player);
+        this.material2 = parseMaterial(screenHandler.getSlot(9).getItem(), Minecraft.getInstance().player);
 
-        this.ingredient1 = parseIngredient(screenHandler.getSlot(2).getStack(), MinecraftClient.getInstance().player);
-        this.ingredient2 = parseIngredient(screenHandler.getSlot(3).getStack(), MinecraftClient.getInstance().player);
-        this.ingredient3 = parseIngredient(screenHandler.getSlot(11).getStack(), MinecraftClient.getInstance().player);
-        this.ingredient4 = parseIngredient(screenHandler.getSlot(12).getStack(), MinecraftClient.getInstance().player);
-        this.ingredient5 = parseIngredient(screenHandler.getSlot(20).getStack(), MinecraftClient.getInstance().player);
-        this.ingredient6 = parseIngredient(screenHandler.getSlot(21).getStack(), MinecraftClient.getInstance().player);
+        this.ingredient1 = parseIngredient(screenHandler.getSlot(2).getItem(), Minecraft.getInstance().player);
+        this.ingredient2 = parseIngredient(screenHandler.getSlot(3).getItem(), Minecraft.getInstance().player);
+        this.ingredient3 = parseIngredient(screenHandler.getSlot(11).getItem(), Minecraft.getInstance().player);
+        this.ingredient4 = parseIngredient(screenHandler.getSlot(12).getItem(), Minecraft.getInstance().player);
+        this.ingredient5 = parseIngredient(screenHandler.getSlot(20).getItem(), Minecraft.getInstance().player);
+        this.ingredient6 = parseIngredient(screenHandler.getSlot(21).getItem(), Minecraft.getInstance().player);
 
         CraftingResultSlotTracker.setSlots(screenHandler);
     }
@@ -121,10 +121,10 @@ public class ActiveCraft {
         }
     }
 
-    public Integer setCraftLevel(ItemStack stack, PlayerEntity player) {
+    public Integer setCraftLevel(ItemStack stack, Player player) {
         if (stack.isEmpty() || player == null) return null;
 
-        List<Text> tooltip = stack.getTooltip(TooltipContext.DEFAULT, player, TooltipType.BASIC);
+        List<Component> tooltip = stack.getTooltipLines(TooltipContext.EMPTY, player, TooltipFlag.Default.NORMAL);
 
         for(int i = 0; i < tooltip.size(); i++) {
 
@@ -232,15 +232,15 @@ public class ActiveCraft {
         return value == null ? "" : value.toString();
     }
 
-    private IngredientData parseIngredient(ItemStack ingredientItemStack, PlayerEntity player) {
-        String ingredientName = ingredientItemStack.getName().getString();
+    private IngredientData parseIngredient(ItemStack ingredientItemStack, Player player) {
+        String ingredientName = ingredientItemStack.getHoverName().getString();
 
         if (ingredientName == null) return new IngredientData(null, null, null);
         if (EMPTY_INGREDIENT_PATTERN.matcher(ingredientName).matches()) {
             return new IngredientData(null, null, null);
         }
 
-        Integer tier = getIngredientTier(ingredientItemStack.getName());
+        Integer tier = getIngredientTier(ingredientItemStack.getHoverName());
         Integer level = getLevel(ingredientItemStack, player);
         
         String parsedIngredientName = parseIngredientName(ingredientName);
@@ -256,11 +256,11 @@ public class ActiveCraft {
         return ingredientName.substring(0, bracketIndex).trim();
     }
 
-    private int getIngredientTier(Text text) {
+    private int getIngredientTier(Component text) {
         return countDarkGrayStars(text, text.getStyle().getColor());
     }
 
-    private int countDarkGrayStars(Text text, TextColor inheritedColor) {
+    private int countDarkGrayStars(Component text, TextColor inheritedColor) {
         int count = 0;
         TextColor color = text.getStyle().getColor();
 
@@ -273,13 +273,13 @@ public class ActiveCraft {
         boolean hasChildren = !text.getSiblings().isEmpty();
 
         if (!hasChildren) {
-            if (raw.contains("✫") && color != TextColor.fromFormatting(Formatting.DARK_GRAY)) {
+            if (raw.contains("✫") && color != TextColor.fromLegacyFormat(ChatFormatting.DARK_GRAY)) {
                 count += raw.length();
             }
         }
 
         // Recurse through siblings
-        for (Text sibling : text.getSiblings()) {
+        for (Component sibling : text.getSiblings()) {
             count += countDarkGrayStars(sibling, color);
         }
 
@@ -288,7 +288,7 @@ public class ActiveCraft {
 
 
 
-    private MaterialData parseMaterial(ItemStack material, PlayerEntity player) {
+    private MaterialData parseMaterial(ItemStack material, Player player) {
         String name;
         Integer tier;
 
@@ -296,7 +296,7 @@ public class ActiveCraft {
         Integer level = getLevel(material, player);
 
 
-        Matcher matcher = MATERIAL_PATTERN.matcher(material.getName().getString());
+        Matcher matcher = MATERIAL_PATTERN.matcher(material.getHoverName().getString());
         if (matcher.find()) {
             name = matcher.group(1).trim();
             tier = matcher.group(2).length(); // Number of 'highlighted' stars in the ingredient name
@@ -308,9 +308,9 @@ public class ActiveCraft {
 
     }
 
-        private Integer getLevel(ItemStack stack, PlayerEntity player) {
-        var tooltip = stack.getTooltip(TooltipContext.DEFAULT, player, TooltipType.BASIC);
-        for (Text line : tooltip) {
+    private Integer getLevel(ItemStack stack, Player player) {
+        var tooltip = stack.getTooltipLines(TooltipContext.EMPTY, player, TooltipFlag.Default.NORMAL);
+        for (Component line : tooltip) {
             String raw = line.getString();
             Matcher matcher = LEVEL_PATTERN.matcher(raw);
             if (matcher.find()) {

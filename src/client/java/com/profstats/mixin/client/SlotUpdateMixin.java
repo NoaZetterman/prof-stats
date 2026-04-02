@@ -1,9 +1,9 @@
 package com.profstats.mixin.client;
 
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.network.packet.s2c.play.ScreenHandlerSlotUpdateS2CPacket;
-import net.minecraft.item.ItemStack;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.network.protocol.game.ClientboundContainerSetSlotPacket;
+import net.minecraft.world.item.ItemStack;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -19,16 +19,15 @@ import com.profstats.craft.CraftingResultSlotTracker;
  * to detect the profession level of the crafted item 
  * and to know that the craft is finished
  */
-@Mixin(ClientPlayNetworkHandler.class)
+@Mixin(ClientPacketListener.class)
 public class SlotUpdateMixin {
-    @Inject(method = "onScreenHandlerSlotUpdate", at = @At("HEAD"))
-    private void onSlotUpdate(ScreenHandlerSlotUpdateS2CPacket packet, CallbackInfo ci) {
-        MinecraftClient client = MinecraftClient.getInstance();
+    @Inject(method = "handleContainerSetSlot", at = @At("HEAD"))
+    private void onSlotUpdate(ClientboundContainerSetSlotPacket packet, CallbackInfo ci) {
+        Minecraft minecraft = Minecraft.getInstance();
 
-        // Ignore when we are not in a crafting screen
-        if (client.currentScreen == null) return;
+        if (minecraft.screen == null) return;
 
-        String title = client.currentScreen.getTitle().getString();
+        String title = minecraft.screen.getTitle().getString();
         if(Profession.fromDisplayName(title) == null) return;
 
         ProfStatsClient statisticMod = ProfStatsClient.getInstance();
@@ -36,15 +35,12 @@ public class SlotUpdateMixin {
 
         int slot = packet.getSlot();
 
-        // Track 
-        ItemStack newStack = packet.getStack();
+        ItemStack newStack = packet.getItem();
         ItemStack oldStack = CraftingResultSlotTracker.getSlot(slot);
 
-        if (oldStack != ItemStack.EMPTY && !ItemStack.areEqual(oldStack, newStack)) {
-            ItemStack craftedItem = newStack;
-            statisticMod.finishActiveCraft(craftedItem, client.player);
+        if (oldStack != ItemStack.EMPTY && !ItemStack.isSameItemSameComponents(oldStack, newStack)) {
+            statisticMod.finishActiveCraft(newStack, minecraft.player);
             CraftingResultSlotTracker.setSlot(slot, newStack);
         }
-
     }
 }

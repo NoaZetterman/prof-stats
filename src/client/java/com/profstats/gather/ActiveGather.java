@@ -19,10 +19,10 @@ import com.profstats.ProfStatsClient;
 import com.profstats.Profession;
 import com.profstats.UserData;
 
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.decoration.DisplayEntity.TextDisplayEntity;
-import net.minecraft.text.Text;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.Display.TextDisplay;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.phys.Vec3;
 
 public class ActiveGather {
     private static final Pattern GATHER_XP_PATTERN = Pattern.compile(
@@ -55,11 +55,11 @@ public class ActiveGather {
     // Once the node currently getting processed is found, they'll be put in a map here
     // A map is required because one gather may not be finished when the next is started.
     // This is because item gatehred is detected from the  display entity, and is not displayed directly when finished.
-    private static Map<Vec3d, ActiveGather> activeGathers = new HashMap<Vec3d, ActiveGather>();
+    private static Map<Vec3, ActiveGather> activeGathers = new HashMap<Vec3, ActiveGather>();
     
 
-    private Map<Vec3d, Integer> potentialLocations;
-    private Vec3d location;
+    private Map<Vec3, Integer> potentialLocations;
+    private Vec3 location;
 
     private GatherState state = GatherState.INITIAL;
 
@@ -92,7 +92,7 @@ public class ActiveGather {
 
     private final Instant createdAt;
 
-    public ActiveGather(Profession profession, Map<Vec3d, Integer> potentialLocations, List<Text> gatheringToolTooltip) {
+    public ActiveGather(Profession profession, Map<Vec3, Integer> potentialLocations, List<Component> gatheringToolTooltip) {
         this.profession = profession;
         this.potentialLocations = potentialLocations;
         this.createdAt = Instant.now();
@@ -104,14 +104,14 @@ public class ActiveGather {
     }
 
     public static void reset() {
-        activeGathers = new HashMap<Vec3d, ActiveGather>();
+        activeGathers = new HashMap<Vec3, ActiveGather>();
         potentialGathers = new ArrayList<ActiveGather>();
     }
 
     public static void detectGather(Entity entity) {
-        if (!(entity instanceof TextDisplayEntity displayEntity)) return;
+        if (!(entity instanceof TextDisplay displayEntity)) return;
 
-        Vec3d entityPosition = entity.getPos();
+        Vec3 entityPosition = entity.position();
 
         detectPotentialLocations(entityPosition, displayEntity);
 
@@ -141,7 +141,7 @@ public class ActiveGather {
     /*
     * Find node that is currently being gathered, from a list of potential nodes
     */
-    private static void detectPotentialLocations(Vec3d entityPosition, TextDisplayEntity displayEntity) {
+    private static void detectPotentialLocations(Vec3 entityPosition, TextDisplay displayEntity) {
         ListIterator<ActiveGather> it = potentialGathers.listIterator();
         String hologramText = displayEntity.getText().getString();
 
@@ -179,7 +179,7 @@ public class ActiveGather {
         return profession;
     }
 
-    public boolean isAtLocation(Vec3d location) {
+    public boolean isAtLocation(Vec3 location) {
         if (this.location != null && this.location.equals(location)) {
             return true;
         }
@@ -202,7 +202,7 @@ public class ActiveGather {
         return state == GatherState.XP_GAIN_WITH_ITEM || state == GatherState.COMPLETED_COOLDOWN || state == GatherState.INITIAL;
     }
 
-    public void readGatherHologram(TextDisplayEntity text) {
+    public void readGatherHologram(TextDisplay text) {
         String hologramText = text.getText().getString();
 
         if (hologramText.equals("")) return;
@@ -404,7 +404,7 @@ public class ActiveGather {
     }
 
 
-    private void setToolData(List<Text> gatheringToolTooltip) {
+    private void setToolData(List<Component> gatheringToolTooltip) {
         String tierLine = gatheringToolTooltip.get(1).getString();
         String speedLine = gatheringToolTooltip.get(3).getString();
         String durabilityLine = gatheringToolTooltip.get(7).getString();
@@ -430,4 +430,3 @@ public class ActiveGather {
 
     }
 }
-
