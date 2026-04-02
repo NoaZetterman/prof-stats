@@ -19,13 +19,15 @@ public class InteractEntityAction extends PendingAction {
 
     @Override
     public void execute(Minecraft minecraft) {
-        if (minecraft.getConnection() != null) {
-            while(!packetQueue.isEmpty()) {
-                minecraft.getConnection().send(
-                    this.packetQueue.remove()
-                );
+        minecraft.execute(() -> {
+            if (minecraft.getConnection() != null) {
+                while(!packetQueue.isEmpty()) {
+                    minecraft.getConnection().send(
+                        this.packetQueue.remove()
+                    );
+                }
             }
-        }
+        });
     }
 
     public void addToQueue(ServerboundInteractPacket packet) {

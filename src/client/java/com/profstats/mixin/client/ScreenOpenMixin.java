@@ -8,7 +8,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.profstats.ProfStatsClient;
-import com.profstats.ProfessionScanner;
 
 @Mixin(Minecraft.class)
 public class ScreenOpenMixin {
@@ -20,9 +19,5 @@ public class ScreenOpenMixin {
         if (screen == null) {
             return;
         }
-
-        // Scans screen when we have an active scan and the screen is the correct one
-        ProfessionScanner.tryScanScreen(screen);
-        // GuildBoostScanner.tryScanScreen(screen);
     }
 }

@@ -5,6 +5,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import com.profstats.ProfessionScanner;
 import com.profstats.gather.GuildBoostScanner;
 
 import net.minecraft.client.Minecraft;
@@ -18,6 +19,11 @@ public abstract class InventoryDataMixin {
     private void onInventory(ClientboundContainerSetContentPacket packet, CallbackInfo ci) {
         if (packet.containerId() == GuildBoostScanner.getSyncId() && GuildBoostScanner.hasActiveScan()) {
             GuildBoostScanner.scanInventory(packet.items());
+
+            Minecraft.getInstance().getConnection()
+                .send(new ServerboundContainerClosePacket(packet.containerId()));
+        } else if (packet.containerId() == ProfessionScanner.getSyncId() && ProfessionScanner.hasActiveScan())  {
+            ProfessionScanner.scanScreen(packet.items());
 
             Minecraft.getInstance().getConnection()
                 .send(new ServerboundContainerClosePacket(packet.containerId()));

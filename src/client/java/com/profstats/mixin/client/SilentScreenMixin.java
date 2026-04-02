@@ -6,6 +6,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.profstats.ProfStatsClient;
+import com.profstats.ProfessionScanner;
 import com.profstats.gather.GuildBoostScanner;
 
 import net.minecraft.client.multiplayer.ClientPacketListener;
@@ -21,6 +22,9 @@ public abstract class SilentScreenMixin {
             GuildBoostScanner.setSyncId(packet.getContainerId());
             
             // Cancel the packet so MinecraftClient.setScreen() is never called
+            ci.cancel(); 
+        } else if (ProfessionScanner.hasActiveScan() && ProfessionScanner.getScreenTitle().equals(screenTitle)) {
+            ProfessionScanner.setSyncId(packet.getContainerId());
             ci.cancel(); 
         }
     }

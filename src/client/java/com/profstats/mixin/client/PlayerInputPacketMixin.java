@@ -27,7 +27,7 @@ public class PlayerInputPacketMixin {
     @Inject(method = "send(Lnet/minecraft/network/protocol/Packet;)V", at = @At("HEAD"), cancellable = true)
     private void onSendPacket(Packet<?> packet, CallbackInfo ci) {
         if (packet instanceof ServerboundInteractPacket p) {
-            if(ProfessionScanner.isScanInProgress()) {
+            if(ProfessionScanner.hasActiveScan()) {
                 ProfessionScanner.addToPendingActionQueue(packet);
                 ci.cancel();
             } else if (ProfessionScanner.shouldTriggerScan()) {
