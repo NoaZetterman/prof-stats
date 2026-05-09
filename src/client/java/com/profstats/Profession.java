@@ -8,26 +8,28 @@ enum ProfessionType {
 }
 
 public enum Profession {
-    WOODCUTTING("Woodcutting", 'Ⓒ', ProfessionType.GATHERING),
-    MINING("Mining", 'Ⓑ', ProfessionType.GATHERING),
-    FARMING("Farming", 'Ⓙ', ProfessionType.GATHERING),
-    FISHING("Fishing", 'Ⓚ', ProfessionType.GATHERING),
+    WOODCUTTING("Woodcutting", "Chopping", 'Ⓒ', ProfessionType.GATHERING),
+    MINING("Mining", "Mining", 'Ⓑ', ProfessionType.GATHERING),
+    FARMING("Farming", "Farming", 'Ⓙ', ProfessionType.GATHERING),
+    FISHING("Fishing", "Fishing", 'Ⓚ', ProfessionType.GATHERING),
 
-    ARMOURING("Armouring", 'Ⓗ', ProfessionType.CRAFTING),
-    WEAPONSMITHING("Weaponsmithing", 'Ⓖ', ProfessionType.CRAFTING),
-    TAILORING("Tailoring", 'Ⓕ', ProfessionType.CRAFTING),
-    WOODWORKING("Woodworking", 'Ⓘ', ProfessionType.CRAFTING),
-    JEWELING("Jeweling", 'Ⓓ', ProfessionType.CRAFTING),
-    COOKING("Cooking", 'Ⓐ', ProfessionType.CRAFTING),
-    SCRIBLING("Scribing", 'Ⓔ', ProfessionType.CRAFTING),
-    ALCHEMISM("Alchemism", 'Ⓛ', ProfessionType.CRAFTING);
+    ARMOURING("Armouring", "Armouring", 'Ⓗ', ProfessionType.CRAFTING),
+    WEAPONSMITHING("Weaponsmithing", "Weaponsmithing", 'Ⓖ', ProfessionType.CRAFTING),
+    TAILORING("Tailoring", "Tailoring", 'Ⓕ', ProfessionType.CRAFTING),
+    WOODWORKING("Woodworking", "Woodworking", 'Ⓘ', ProfessionType.CRAFTING),
+    JEWELING("Jeweling", "Jeweling", 'Ⓓ', ProfessionType.CRAFTING),
+    COOKING("Cooking", "Cooking", 'Ⓐ', ProfessionType.CRAFTING),
+    SCRIBLING("Scribing", "Scribing", 'Ⓔ', ProfessionType.CRAFTING),
+    ALCHEMISM("Alchemism", "Alchemism", 'Ⓛ', ProfessionType.CRAFTING);
 
     public final String displayName;
+    public final String actionName;
     public final char symbol;
     public final ProfessionType type;
 
-    Profession(String displayName, char symbol, ProfessionType type) {
+    Profession(String displayName, String actionName, char symbol, ProfessionType type) {
         this.displayName = displayName;
+        this.actionName = actionName;
         this.symbol = symbol;
         this.type = type;
     }

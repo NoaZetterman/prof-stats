@@ -18,11 +18,8 @@ import net.minecraft.network.chat.Component;
  * Helper class to read gathering XP and speed bonus
  */
 public class GatherIdentificationBonus {
-    private static final Pattern CHARM_GXP_PATTERN = Pattern.compile("^\\+(\\d+)\\%");
-    private static final Pattern IDENTIFICATION_GXP_PATTERN = Pattern.compile("([+-]\\d+)\\%§8\\/(-?\\d+)\\%\\s*Gather XP Bonus");
-    private static final Pattern IDENTIFICATION_GSPEED_PATTERN = Pattern.compile("([+-]\\d+)\\%§8\\/(-?\\d+)\\%\\s*Gather Speed");
-    private static final Pattern POSITIVE_IDENTIFICATION_VALUE_PATTERN = Pattern.compile("^\\+(\\d+)\\%§8\\/(\\d+)\\%\\s");
-    private static final Pattern CRAFTED_DEGRADATION_PERCENTAGE = Pattern.compile("\\[(\\d+)\\%\\ injection\\]$");
+    private static final Pattern IDENTIFICATION_GXP_PATTERN = Pattern.compile("^Gathering Experience.*([+-]\\d+)\\%");
+    private static final Pattern IDENTIFICATION_GSPEED_PATTERN = Pattern.compile("Gathering Speed.*([+-]\\d+)\\%");
 
     private static final Pattern STATUS_EFFECT_GXP_PATTERN = Pattern.compile("([+-]?\\d+)% Gather XP Bonus");
     private static final Pattern STATUS_EFFECT_GSPEED_PATTERN = Pattern.compile("([+-]?\\d+)% Gather Speed");
@@ -79,8 +76,9 @@ public class GatherIdentificationBonus {
 
         for(int i = 0; i <= 6; i++) {
             List<Component> tooltip = player.getInventory().getItem(i).getTooltipLines(TooltipContext.EMPTY, player, TooltipFlag.Default.NORMAL);
-            if (tooltip.get(0).getString().equals("Charm of the Void")) {
-                Matcher m = CHARM_GXP_PATTERN.matcher(tooltip.get(6).getString());
+
+            if (tooltip.get(0).getString().equals("\uDAFC\uDC00Charm of the Void\uDAFC\uDC00")) {
+                Matcher m = IDENTIFICATION_GXP_PATTERN.matcher(tooltip.get(8).getString());
                 if (m.find()) {
                     int foundCharmXp = Integer.parseInt(m.group(1));
 
@@ -93,8 +91,8 @@ public class GatherIdentificationBonus {
 
         for(int i = 13; i < 35; i++) {
             List<Component> tooltip = player.getInventory().getItem(i).getTooltipLines(TooltipContext.EMPTY, player, TooltipFlag.Default.NORMAL);
-            if (tooltip.get(0).getString().equals("Charm of the Void")) {
-                Matcher m = CHARM_GXP_PATTERN.matcher(tooltip.get(6).getString());
+            if (tooltip.get(0).getString().equals("\uDAFC\uDC00Charm of the Void\uDAFC\uDC00")) {
+                Matcher m = IDENTIFICATION_GXP_PATTERN.matcher(tooltip.get(8).getString());
                 if (m.find()) {
                     int foundCharmXp = Integer.parseInt(m.group(1));
 
@@ -117,162 +115,11 @@ public class GatherIdentificationBonus {
         for (int i = 0; i < tooltip.size(); i++) {
             Matcher m = identification_pattern.matcher(tooltip.get(i).getString());
             if (m.find()) {
-                int itemCurrentValue = Integer.parseInt(m.group(1));
-                int baseValue = Integer.parseInt(m.group(2));
-
-                Integer degradedValue = degradedValue(item, player, itemCurrentValue, baseValue);
-
-                return degradedValue; // This can be null when we did not properly detect the true value
+                return Integer.parseInt(m.group(1));
             }
         }
 
         return 0;
-    }
-
-
-    /*
-     * Calculates the degraded value, as the one when hovering the item is sometimes off by one due to discrepancies in Wynn implementation.
-     *
-     * Mirrors Wynncraft calculation related to durability degradation, keeping the same floating point errors.
-     * Therefore, some values are casted to integers instead of rounded / floored.
-     * 
-     * Sorry for a huge method but I can't be assed to refactor it properly. This should probably be its own module...
-     */
-    private static Integer degradedValue(ItemStack itemStack, LocalPlayer player, int displayedValue, int baseValue) {
-        double deg1 = 0.005;
-        double deg2 = 0.010;
-        double deg3 = 0.015;
-        double deg4 = 0.025;
-        double deg5 = 0.035;
-
-        double multiplier = 1.0;
-
-        int degradationPercent = 100;
-
-        List<Component> tooltip = itemStack.getTooltipLines(TooltipContext.EMPTY, player, TooltipFlag.Default.NORMAL);
-
-        
-        Matcher degradationPercentMatcher = CRAFTED_DEGRADATION_PERCENTAGE.matcher(tooltip.get(0).getString());
-        if (degradationPercentMatcher.find()) {
-            degradationPercent = Integer.parseInt(degradationPercentMatcher.group(1));
-        } else {
-            ProfStatsClient.LOGGER.info("Failed to find degradation % for:" + tooltip.get(0).getString());
-            return null;
-        }
-        
-        if (degradationPercent == 100) {
-            return baseValue;
-        }
-
-        for(int i = 0; i < 11; i++) {
-            multiplier -= deg1;
-
-            if (((int) (multiplier*100)) == degradationPercent) {
-
-                // 0.945 (94%) is last with 0.005 degradation, next step has 93% degradation so it can be detected.
-                if (multiplier == 0.945) {
-                    return (int) (baseValue*multiplier);
-                }
-
-                // Possible value pairs:
-                // 0.995, 0.990 - 99%
-                // 0.985, 0.980 - 98%
-                // 0.975, 0.970 - 97%
-                // 0.965, 0.960 - 96%
-                // 0.955, 0.950 - 95%
-
-                double multiplierNext = multiplier - deg1;
-
-
-                // As shown in character info under identifications
-                int actual = (int) (baseValue*multiplier);
-                int actualNext = (int) (baseValue*multiplierNext);
-
-
-                // If actual value in both cases are equal, we know the value
-                if (actual == actualNext) {
-                    return actual;
-                }
-
-                // Iterate over all identifications to find if one differs between the two multipliers
-                for (int j = 1; j < tooltip.size()-2; j++) {
-                    Matcher m = POSITIVE_IDENTIFICATION_VALUE_PATTERN.matcher(tooltip.get(j).getString());
-                    if (m.find()) {
-                        int degraded = Integer.parseInt(m.group(1));
-                        int base = Integer.parseInt(m.group(2));
-
-                        if (((int) (base * multiplierNext)) != ((int) (base * multiplier))) {
-                            if (((int) (base * multiplier)) == degraded) {
-                                return actual;
-                            }
-
-                            if (((int) (base * multiplierNext)) == degraded) {
-                                return actualNext;
-                            }
-                        }
-                    }
-                }
-
-                // Skipping second detection method
-                // Durability percent detection is not necessarily accurate because some values may be skipped.
-                // Can potentially be implemented for higher dura items (24 dura misses 2 values, so perhaps around 30+ dura will always work)
-                
-                // Detect these from ItemStack, convert to percent
-                // double durabilityMaxPercent = 1;
-                // double durabilityMinPercent = 0;
-
-
-                // // If min is above multiplier, 
-                // if (durabilityMinPercent > durabilityPercent) {
-                //     return actual;
-                // }
-                
-                // if (durabilityMaxPercent <= durabilityPercent) {
-                //     return actualNext;
-                // }
-
-
-                ProfStatsClient.LOGGER.info("Failed to detect degradation %: " + degradationPercent);
-
-                return null;
-            }
-        }
-
-        for(int i = 0; i < 9; i++) {
-            multiplier -= deg2;
-            if (((int) (multiplier*100)) == degradationPercent) {
-                // 1 possible value
-                return (int) (baseValue*multiplier);
-            }
-        }
-
-        for(int i = 0; i < 10; i++) {
-            multiplier -= deg3;
-            if (((int) (multiplier*100)) == degradationPercent) {
-                // 1 possible value
-                return (int) (baseValue*multiplier);
-            }
-        }
-
-        for(int i = 0; i < 10; i++) {
-            multiplier -= deg4;
-            if (((int) (multiplier*100)) == degradationPercent) {
-                // 1 possible value
-                return (int) (baseValue*multiplier);
-            }
-        }
-
-        for(int i = 0; i < 10; i++) {
-            multiplier -= deg5;
-            if (((int) (multiplier*100)) == degradationPercent) {
-                // 1 possible value
-                return (int) (baseValue*multiplier);
-            }
-        }
-
-        ProfStatsClient.LOGGER.info("Failed to detect degradation %: " + degradationPercent);
-        // This should not happen?
-        return null;
     }
 
 
