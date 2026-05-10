@@ -42,13 +42,13 @@ public class GatherScanner {
             ProfessionScanner.attemptTriggerScan(new NoAction());
         }
 
-        if (itemName.startsWith("\uE000 Gathering Scythe")) {
+        if (itemName.startsWith("\uDAFC\uDC00Gathering Scythe")) {
             detectGather(player, mainHandItem, Profession.FARMING);
-        } else if (itemName.startsWith("\uE001 Gathering Rod")) {
+        } else if (itemName.startsWith("\uDAFC\uDC00Gathering Rod")) {
             detectGather(player, mainHandItem, Profession.FISHING);
-        } else if (itemName.startsWith("\uE002 Gathering Pickaxe")) {
+        } else if (itemName.startsWith("\uDAFC\uDC00Gathering Pickaxe")) {
             detectGather(player, mainHandItem, Profession.MINING);
-        } else if (itemName.startsWith("\uE003 Gathering Axe")) {
+        } else if (itemName.startsWith("\uDAFC\uDC00Gathering Axe")) {
             detectGather(player, mainHandItem, Profession.WOODCUTTING);
         }
     }
@@ -73,7 +73,7 @@ public class GatherScanner {
         Level world = player.level();
 
         Vec3 playerPosition = player.getEyePosition(1.0f);
-        AABB box = new AABB(playerPosition, playerPosition).inflate(5.0f);
+        AABB box = new AABB(playerPosition, playerPosition).inflate(6.0f);
 
         List<TextDisplay> displays =
             world.getEntitiesOfClass(

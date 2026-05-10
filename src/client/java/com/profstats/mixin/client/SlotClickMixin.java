@@ -40,7 +40,7 @@ public class SlotClickMixin {
 
             if (CRAFT_BUTTON_PATTERN.matcher(itemName).matches()) {
                 Minecraft minecraft = Minecraft.getInstance();
-                Profession profession = Profession.fromDisplayName(minecraft.screen.getTitle().getString());
+                Profession profession = Profession.fromScreenName(minecraft.screen.getTitle().getString());
 
                 ActiveCraft statistic = statisticMod.startNewCraft(profession);
                 statistic.setCraftItems(player.containerMenu);

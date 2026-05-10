@@ -28,7 +28,7 @@ public class SlotUpdateMixin {
         if (minecraft.screen == null) return;
 
         String title = minecraft.screen.getTitle().getString();
-        if(Profession.fromDisplayName(title) == null) return;
+        if (Profession.fromScreenName(title) == null) return;
 
         ProfStatsClient statisticMod = ProfStatsClient.getInstance();
         if (statisticMod.getActiveCraft() == null) return;

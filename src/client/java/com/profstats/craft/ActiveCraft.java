@@ -14,8 +14,10 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item.TooltipContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
 import net.minecraft.ChatFormatting;
 
@@ -23,9 +25,7 @@ import java.nio.file.*;
 import java.time.Instant;
 
 public class ActiveCraft {
-    private static final Pattern LEVEL_PATTERN = Pattern.compile("Lv\\. Min: (?:§f)?(\\d+)"); // Capute both profession and combat level
-    private static final Pattern MATERIAL_PATTERN = Pattern.compile("^(.*?)§6 \\[§e(✫*)(?:§8✫*)?§6\\]$");
-    private static final Pattern EMPTY_INGREDIENT_PATTERN = Pattern.compile("^§7Ingredient Slots §8\\(Optional\\)$");
+    private static final Pattern LEVEL_PATTERN = Pattern.compile("(\\d+)");
 
     private record MaterialData(String name, Integer level, Integer tier, Integer count) {}
     private record IngredientData(String name, Integer tier, Integer level) {}
@@ -126,19 +126,10 @@ public class ActiveCraft {
 
         List<Component> tooltip = stack.getTooltipLines(TooltipContext.EMPTY, player, TooltipFlag.Default.NORMAL);
 
-        for(int i = 0; i < tooltip.size(); i++) {
+        if (tooltip.size() <= 8) return null;
 
-            String levelLine =  tooltip.get(i).getString();
-
-            Matcher matcher = LEVEL_PATTERN.matcher(levelLine);
-
-            if(matcher.find()) {
-                craftLevel = Integer.parseInt(matcher.group(1));
-                return craftLevel;        
-            } 
-        }
-
-        return null;
+        craftLevel = getLevel(tooltip.get(7));
+        return craftLevel;
     }
 
     public void store() {
@@ -233,91 +224,72 @@ public class ActiveCraft {
     }
 
     private IngredientData parseIngredient(ItemStack ingredientItemStack, Player player) {
-        String ingredientName = ingredientItemStack.getHoverName().getString();
+        String ingredientName = removeSpecialCharacters(ingredientItemStack.getHoverName().getString());
 
         if (ingredientName == null) return new IngredientData(null, null, null);
-        if (EMPTY_INGREDIENT_PATTERN.matcher(ingredientName).matches()) {
+        if (ingredientName.equals("7Ingredient Slots 8(Optional)")) {
             return new IngredientData(null, null, null);
         }
 
-        Integer tier = getIngredientTier(ingredientItemStack.getHoverName());
-        Integer level = getLevel(ingredientItemStack, player);
+        List<Component> c = ingredientItemStack.getTooltipLines(TooltipContext.EMPTY, player, TooltipFlag.Default.NORMAL);
+
+        Integer tier = getStarCount(c.get(2));
+        Integer level = getLevel(c.get(4));
         
-        String parsedIngredientName = parseIngredientName(ingredientName);
-
-        return new IngredientData(parsedIngredientName, tier, level);
+        return new IngredientData(ingredientName, tier, level);
     }
-
-    private String parseIngredientName(String ingredientName) {
-        int bracketIndex = ingredientName.indexOf('[');
-        if (bracketIndex == -1) {
-            return ingredientName.trim();
-        }
-        return ingredientName.substring(0, bracketIndex).trim();
-    }
-
-    private int getIngredientTier(Component text) {
-        return countDarkGrayStars(text, text.getStyle().getColor());
-    }
-
-    private int countDarkGrayStars(Component text, TextColor inheritedColor) {
-        int count = 0;
-        TextColor color = text.getStyle().getColor();
-
-        if (color == null) color = inheritedColor;
-
-        String raw = text.getString();
-
-        // Avoids counting the same text more than once,
-        // and must be root node to know the color of the text 
-        boolean hasChildren = !text.getSiblings().isEmpty();
-
-        if (!hasChildren) {
-            if (raw.contains("✫") && color != TextColor.fromLegacyFormat(ChatFormatting.DARK_GRAY)) {
-                count += raw.length();
-            }
-        }
-
-        // Recurse through siblings
-        for (Component sibling : text.getSiblings()) {
-            count += countDarkGrayStars(sibling, color);
-        }
-
-        return count;
-    }
-
-
 
     private MaterialData parseMaterial(ItemStack material, Player player) {
-        String name;
-        Integer tier;
-
         Integer count = material.getCount();
-        Integer level = getLevel(material, player);
 
+        List<Component> c = material.getTooltipLines(TooltipContext.EMPTY, player, TooltipFlag.Default.NORMAL);
 
-        Matcher matcher = MATERIAL_PATTERN.matcher(material.getHoverName().getString());
-        if (matcher.find()) {
-            name = matcher.group(1).trim();
-            tier = matcher.group(2).length(); // Number of 'highlighted' stars in the ingredient name
-        } else {
-            return null;
-        }
+        Integer tier = getStarCount(c.get(2));
+        Integer level = getLevel(c.get(4));
+        String name = removeSpecialCharacters(material.getHoverName().getString());
 
         return new MaterialData(name, level, tier, count);
-
     }
 
-    private Integer getLevel(ItemStack stack, Player player) {
-        var tooltip = stack.getTooltipLines(TooltipContext.EMPTY, player, TooltipFlag.Default.NORMAL);
-        for (Component line : tooltip) {
-            String raw = line.getString();
-            Matcher matcher = LEVEL_PATTERN.matcher(raw);
-            if (matcher.find()) {
+    private Integer getStarCount(Component component) {
+        try {
+            Component firstStarContainer = component.getSiblings().get(1)
+                                                .getSiblings().get(0)
+                                                .getSiblings().get(0)
+                                                .getSiblings().get(0);
+            
+            TextColor color = firstStarContainer.getStyle().getColor();
+            if (color == null) return 0;
+
+            int hex = color.getValue();
+
+            return switch (hex) {
+                case 0xE6E647 -> 1; // Gold
+                case 0xE647E6 -> 2; // Magenta
+                case 0x47E6E6 -> 3; // Cyan
+                case 0x000000 -> 0; // Black
+                default -> null;
+            };
+        } catch (IndexOutOfBoundsException e) {
+            return null; // UI structure changed or isn't the star UI
+        }
+    }
+
+    private String removeSpecialCharacters(String str) {
+        return str.replaceAll("[^\\x20-\\x7E]", "").trim();
+    }
+
+    private Integer getLevel(Component component) {
+        component.getString();
+        Matcher matcher = LEVEL_PATTERN.matcher(component.getString());
+        
+        if (matcher.find()) {
+            try {
                 return Integer.parseInt(matcher.group(1));
+            } catch (NumberFormatException e) {
+                return null;
             }
         }
-
         return null;
     }
 }

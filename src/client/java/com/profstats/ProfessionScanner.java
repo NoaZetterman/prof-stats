@@ -1,18 +1,13 @@
 package com.profstats;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.profstats.gather.ActiveGather;
-import com.profstats.gather.GuildBoostScanner;
 import com.profstats.pendingaction.InteractEntityAction;
 import com.profstats.pendingaction.PendingAction;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.world.item.Item.TooltipContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
@@ -113,6 +108,7 @@ public class ProfessionScanner {
 
         Minecraft minecraft = Minecraft.getInstance();
 
+        minecraft.player.closeContainer();
         pendingAction.execute(minecraft);
         
         // Try to scan at next opportunity if we failed to find the items this time

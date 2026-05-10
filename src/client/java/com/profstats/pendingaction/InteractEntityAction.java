@@ -2,6 +2,8 @@ package com.profstats.pendingaction;
 
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.protocol.game.ServerboundInteractPacket;
@@ -19,14 +21,17 @@ public class InteractEntityAction extends PendingAction {
 
     @Override
     public void execute(Minecraft minecraft) {
-        minecraft.execute(() -> {
-            if (minecraft.getConnection() != null) {
-                while(!packetQueue.isEmpty()) {
-                    minecraft.getConnection().send(
-                        this.packetQueue.remove()
-                    );
+        // Must delay a bit to ensure the other screen is properly closed
+        CompletableFuture.delayedExecutor(50, TimeUnit.MILLISECONDS).execute(() -> {
+            minecraft.execute(() -> {
+                if (minecraft.getConnection() != null) {
+                    while(!packetQueue.isEmpty()) {
+                        minecraft.getConnection().send(
+                            this.packetQueue.remove()
+                        );
+                    }
                 }
-            }
+            });
         });
     }
 

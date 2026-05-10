@@ -9,18 +9,23 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.profstats.ProfessionScanner;
 import com.profstats.ProfStatsClient;
 import com.profstats.Profession;
 import com.profstats.UserData;
 
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.item.Item.TooltipContext;
+import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.entity.Display.TextDisplay;
+import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.phys.Vec3;
 
@@ -30,23 +35,14 @@ public class ActiveGather {
         "\\+(\\d+)\\s+[^ ]+\\s+([A-Za-z]+) XP \\[(\\d+(?:\\.\\d+)?)%\\]$"
     );
 
-    private static final Pattern GATHER_MATERIAL_PATTERN = Pattern.compile(
-        "(?m)^\\+(\\d+)\\s+(?:§.)*(.*?)(?:§6\\s*\\[§e(✫*)(?:§8✫*)?§6\\])?$"
-    );
-
     private static final Pattern GATHER_COOLDOWN_PATTERN = Pattern.compile("^§\\d+s$");
 
-    private static final Pattern TOOL_TIER_PATTERN = Pattern.compile("^§7Tier (\\d+)$");
-    private static final Pattern TOOL_SPEED_PATTERN = Pattern.compile("^§6Gathering Speed: (\\d+)§");
-    private static final Pattern TOOL_DURABILITY_PATTERN = Pattern.compile("^§3Gathering Tool §8\\[(\\d+)\\/(\\d+) Durability\\]$");
+    private static final Pattern TOOL_TIER_PATTERN = Pattern.compile("Gathering [a-zA-Z]+ T(\\d+)$");
+    private static final Pattern TOOL_SPEED_PATTERN = Pattern.compile("(\\d+) Gathering Speed");
+    private static final Pattern TOOL_DURABILITY_PATTERN = Pattern.compile("Durability (\\d+)\\/(\\d+)$");
 
-
-    private static final Map<Profession, String> tickForProf = Map.of(
-        Profession.FARMING,     "[|||Farming|||]",
-        Profession.MINING,      "[|||Mining|||]",
-        Profession.FISHING,     "[|||Fishing|||]",
-        Profession.WOODCUTTING, "[|||Chopping|||]"
-    );
+    private static final Pattern GATHER_XP_ID_PATTERN = Pattern.compile("^§7- Gathering Experience: ([+-]?\\d+)%$");
+    private static final Pattern GATHER_SPEED_ID_PATTERN = Pattern.compile("^§7- Gathering Speed: ([+-]?\\d+)%$");
 
     // When we detect a click to start crafting, any hologram nearby is considered, these are placed in a queue and processed.
     // The gathers live here for a few ticks, until considered stale or until node is found in ticking state.
@@ -96,10 +92,13 @@ public class ActiveGather {
         this.profession = profession;
         this.potentialLocations = potentialLocations;
         this.createdAt = Instant.now();
+        this.professionLevel = UserData.getProfessionLevel(profession);
 
-        if (gatheringToolTooltip.size() != 8) return; // Skip adding object if tooltip is incorrect
+
+        if (gatheringToolTooltip.size() != 9) return; // Skip adding object if tooltip is incorrect
 
         setToolData(gatheringToolTooltip);
+
         potentialGathers.add(this);
     }
 
@@ -154,24 +153,24 @@ public class ActiveGather {
                 continue;
             }
 
-            if (activeGather.isAtLocation(entityPosition)) {
-                if (hologramText.contains(tickForProf.get(activeGather.getProfession()))) {
+            // Sometimes hologram moves when the ticks start, we must detect that new location.
+            if (hologramText.contains("\n" + activeGather.profession.symbol + " " + activeGather.profession.actionName)) {
 
-                    // Avoid checking guild boost level if we recently checked it,
-                    // Also avoids an issue with GuildBoostScanner that would happen
-                    // when running two scans almost at the same time
-                    Integer guildGxpBoostLevel = null;
-                    for (ActiveGather ag : activeGathers.values()) {
-                        if (ag.guildGxpBoostLevel != null) {
-                            guildGxpBoostLevel = ag.guildGxpBoostLevel;
-                        }
+                // Avoid checking guild boost level if we recently checked it,
+                // Also avoids an issue with GuildBoostScanner that would happen
+                // when running two scans almost at the same time
+                Integer guildGxpBoostLevel = null;
+                for (ActiveGather ag : activeGathers.values()) {
+                    if (ag.guildGxpBoostLevel != null) {
+                        guildGxpBoostLevel = ag.guildGxpBoostLevel;
                     }
-                    activeGather.guildGxpBoostLevel = guildGxpBoostLevel;
+                }
+                activeGather.guildGxpBoostLevel = guildGxpBoostLevel;
+                activeGather.setLocationData(entityPosition);
 
-                    activeGathers.put(entityPosition, activeGather);
-                    it.remove();
-                }   
-            }
+                activeGathers.put(entityPosition, activeGather);
+                it.remove();
+            }   
         }
     }
 
@@ -179,27 +178,32 @@ public class ActiveGather {
         return profession;
     }
 
-    public boolean isAtLocation(Vec3 location) {
-        if (this.location != null && this.location.equals(location)) {
-            return true;
-        }
-
+    public void setLocationData(Vec3 location) {
+        this.location = location;
         if(this.potentialLocations != null) {
             if (potentialLocations.keySet().contains(location)) {
-                this.location = location;
                 this.nodeLevel = potentialLocations.get(location);
-                this.potentialLocations = null;
-                this.professionLevel = UserData.getProfessionLevel(profession);
-
-                return true;
+            } else {
+                // If the hologram detected was not visible when starting the gather,
+                // guess the level, except for a few edge-cases,
+                // all detected locations near the node should be the same level.
+                Iterator<Integer> it = potentialLocations.values().iterator();
+                this.nodeLevel = it.next();
+                
+                while (it.hasNext()) {
+                    if (it.next() != this.nodeLevel) {
+                        this.nodeLevel = null;
+                        break;
+                    }
+                }
             }
         }
 
-        return false;
+        this.potentialLocations = null;
     }
 
     public boolean isCompleted() {
-        return state == GatherState.XP_GAIN_WITH_ITEM || state == GatherState.COMPLETED_COOLDOWN || state == GatherState.INITIAL;
+        return state == GatherState.XP_GAIN || state == GatherState.COMPLETED_COOLDOWN || state == GatherState.INITIAL;
     }
 
     public void readGatherHologram(TextDisplay text) {
@@ -208,9 +212,6 @@ public class ActiveGather {
         if (hologramText.equals("")) return;
 
         if (detectTick(hologramText)) return;
-
-        // detectGatherMaterial must be before detectGatherXp as it contains the same text, but with an additional line
-        if (detectGatherMaterial(hologramText)) return; 
 
         if (detectGatherXp(hologramText)) return;
         if (detectCooldown(hologramText)) return;
@@ -328,7 +329,8 @@ public class ActiveGather {
     }
 
     private boolean detectTick(String hologramText) {
-        if (!hologramText.contains(tickForProf.get(profession))) return false;
+        // TODO: Possibly figure out how to check the number in the middle as well.
+        if (!hologramText.contains("\n" + profession.symbol + " " + profession.actionName)) return false;
 
         if (professionLevel == null) {
             this.professionLevel = UserData.getProfessionLevel(profession);
@@ -341,11 +343,12 @@ public class ActiveGather {
         // we cancel out the extra tick detected at the beginning to get the right amount of ticks.
         if (state == GatherState.INITIAL) {
             state = GatherState.TICKING;
-        } else {
+
             // Prevent scanning more than once
             if (isPvpActive == null) {
                 detectModifiers();
             }
+        } else {
             ticks += 1;
         }
 
@@ -353,14 +356,15 @@ public class ActiveGather {
     }
 
     private void detectModifiers() {
-        gatherXpModifier = GatherIdentificationBonus.readGatherXpBonus();
-        gatherSpeedModifier = GatherIdentificationBonus.readGatherSpeedBonus();
+        gatherXpModifier = null;
+        gatherSpeedModifier = null;
         isPvpActive = UserData.isPvpActive();
 
+        // TODO: Read xp from new gu boost UI
         // Skip when copied over from what was detected in previous gather
-        if (guildGxpBoostLevel == null) {
-            GuildBoostScanner.triggerScan();
-        }
+        // if (guildGxpBoostLevel == null) {
+        //     GuildBoostScanner.triggerScan();
+        // }
     }
 
     
@@ -382,18 +386,7 @@ public class ActiveGather {
 
         return true;
     }
-    private boolean detectGatherMaterial(String hologramText) {
-        Matcher m = GATHER_MATERIAL_PATTERN.matcher(hologramText);
-        if (!m.find()) return false;
 
-        materialCount = Integer.parseInt(m.group(1));
-        materialName = m.group(2).trim();
-        materialTier = m.group(3) != null ? m.group(3).length() : null;
-
-        state = GatherState.XP_GAIN_WITH_ITEM;
-
-        return true;
-    }
 
     private boolean detectCooldown(String hologramText) {
         Matcher m = GATHER_COOLDOWN_PATTERN.matcher(hologramText);
@@ -406,8 +399,8 @@ public class ActiveGather {
 
     private void setToolData(List<Component> gatheringToolTooltip) {
         String tierLine = gatheringToolTooltip.get(1).getString();
-        String speedLine = gatheringToolTooltip.get(3).getString();
-        String durabilityLine = gatheringToolTooltip.get(7).getString();
+        String speedLine = gatheringToolTooltip.get(4).getString();
+        String durabilityLine = gatheringToolTooltip.get(5).getString();
 
         setToolTier(tierLine);
         setToolSpeed(speedLine);
