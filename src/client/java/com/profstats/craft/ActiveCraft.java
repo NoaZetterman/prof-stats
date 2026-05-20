@@ -14,17 +14,15 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item.TooltipContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
-import net.minecraft.world.item.crafting.Ingredient;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
-import net.minecraft.ChatFormatting;
 
 import java.nio.file.*;
 import java.time.Instant;
 
 public class ActiveCraft {
+    private static final Pattern CRAFT_ITEM_LEVEL_PATTERN = Pattern.compile("Combat Level.*?(\\d+)");
     private static final Pattern LEVEL_PATTERN = Pattern.compile("(\\d+)");
 
     private record MaterialData(String name, Integer level, Integer tier, Integer count) {}
@@ -126,11 +124,13 @@ public class ActiveCraft {
 
         List<Component> tooltip = stack.getTooltipLines(TooltipContext.EMPTY, player, TooltipFlag.Default.NORMAL);
 
+        // Tooltip with craft is at least 8 lines
         if (tooltip.size() <= 8) return null;
 
-        craftLevel = getLevel(tooltip.get(7));
+        craftLevel = getCraftItemLevel(tooltip);
         return craftLevel;
     }
+
 
     public void store() {
         try {
@@ -278,6 +278,23 @@ public class ActiveCraft {
     private String removeSpecialCharacters(String str) {
         return str.replaceAll("[^\\x20-\\x7E]", "").trim();
     }
+
+    private Integer getCraftItemLevel(List<Component> tooltip) {
+        for(Component component : tooltip) {
+            component.getString();
+            Matcher matcher = CRAFT_ITEM_LEVEL_PATTERN.matcher(component.getString());
+            
+            if (matcher.find()) {
+                try {
+                    return Integer.parseInt(matcher.group(1));
+                } catch (NumberFormatException e) {
+                    continue;
+                }
+            }
+        }
+        return null;
+    }
+
 
     private Integer getLevel(Component component) {
         component.getString();
