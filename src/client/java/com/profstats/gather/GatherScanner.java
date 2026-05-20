@@ -23,6 +23,11 @@ import net.minecraft.world.level.Level;
 
 public class GatherScanner {
 
+    private static final Pattern SCYTHE_PATTERN = Pattern.compile("\\uDAFC\\uDC00(.+?)\\s+Scythe\\s+T\\d+.*?\\uDAFC\\uDC00");
+    private static final Pattern ROD_PATTERN = Pattern.compile("\\uDAFC\\uDC00(.+?)\\s+Rod\\s+T\\d+.*?\\uDAFC\\uDC00");
+    private static final Pattern PICKAXE_PATTERN = Pattern.compile("\\uDAFC\\uDC00(.+?)\\s+Pickaxe\\s+T\\d+.*?\\uDAFC\\uDC00");
+    private static final Pattern AXE_PATTERN = Pattern.compile("\\uDAFC\\uDC00(.+?)\\s+Axe\\s+T\\d+.*?\\uDAFC\\uDC00");
+
     public static void tryDetectGather(int button) {
         Minecraft client = Minecraft.getInstance();
         LocalPlayer player = client.player;
@@ -36,19 +41,20 @@ public class GatherScanner {
         if (mainHandItem.isEmpty()) return;
 
         String itemName = mainHandItem.getHoverName().getString();
-        if (!itemName.contains("Gathering")) return;
+
+        if (!itemName.startsWith("\uDAFC\uDC00")) return;
 
         if(ProfessionScanner.shouldTriggerScan()) {
             ProfessionScanner.attemptTriggerScan(new NoAction());
         }
 
-        if (itemName.startsWith("\uDAFC\uDC00Gathering Scythe")) {
+        if (SCYTHE_PATTERN.matcher(itemName).find()) {
             detectGather(player, mainHandItem, Profession.FARMING);
-        } else if (itemName.startsWith("\uDAFC\uDC00Gathering Rod")) {
+        } else if (ROD_PATTERN.matcher(itemName).find()) {
             detectGather(player, mainHandItem, Profession.FISHING);
-        } else if (itemName.startsWith("\uDAFC\uDC00Gathering Pickaxe")) {
+        } else if (PICKAXE_PATTERN.matcher(itemName).find()) {
             detectGather(player, mainHandItem, Profession.MINING);
-        } else if (itemName.startsWith("\uDAFC\uDC00Gathering Axe")) {
+        } else if (AXE_PATTERN.matcher(itemName).find()) {
             detectGather(player, mainHandItem, Profession.WOODCUTTING);
         }
     }
