@@ -20,12 +20,10 @@ import com.profstats.ProfessionScanner;
 import com.profstats.ProfStatsClient;
 import com.profstats.Profession;
 import com.profstats.UserData;
+import com.profstats.pendingaction.NoAction;
 
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.item.Item.TooltipContext;
-import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.entity.Display.TextDisplay;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.phys.Vec3;
 
@@ -40,9 +38,6 @@ public class ActiveGather {
     private static final Pattern TOOL_TIER_PATTERN = Pattern.compile("Gathering [a-zA-Z]+ T(\\d+)$");
     private static final Pattern TOOL_SPEED_PATTERN = Pattern.compile("(\\d+) Gathering Speed");
     private static final Pattern TOOL_DURABILITY_PATTERN = Pattern.compile("Durability (\\d+)\\/(\\d+)$");
-
-    private static final Pattern GATHER_XP_ID_PATTERN = Pattern.compile("^§7- Gathering Experience: ([+-]?\\d+)%$");
-    private static final Pattern GATHER_SPEED_ID_PATTERN = Pattern.compile("^§7- Gathering Speed: ([+-]?\\d+)%$");
 
     // When we detect a click to start crafting, any hologram nearby is considered, these are placed in a queue and processed.
     // The gathers live here for a few ticks, until considered stale or until node is found in ticking state.
@@ -121,7 +116,6 @@ public class ActiveGather {
         activeGather.readGatherHologram(displayEntity);
 
         if (activeGather.isCompleted()) {
-            activeGather.store();
             activeGathers.remove(entityPosition);
         }
     }
@@ -155,7 +149,6 @@ public class ActiveGather {
 
             // Sometimes hologram moves when the ticks start, we must detect that new location.
             if (hologramText.contains("\n" + activeGather.profession.symbol + " " + activeGather.profession.actionName)) {
-
                 // Avoid checking guild boost level if we recently checked it,
                 // Also avoids an issue with GuildBoostScanner that would happen
                 // when running two scans almost at the same time
@@ -227,11 +220,11 @@ public class ActiveGather {
     public void store() {
         // If any data has changed, we don't know what was applied to the gather. 
         // So it will be cancelled by setting items to null, and hence cancel the entire gather
-        if (gatherXpModifier != null && !gatherXpModifier.equals(GatherIdentificationBonus.readGatherXpBonus())) {
+        if (gatherXpModifier != null && !gatherXpModifier.equals(UserData.getProfessionXpBoost())) {
             gatherXpModifier = null;
         }
 
-        if (gatherSpeedModifier != null && !gatherSpeedModifier.equals(GatherIdentificationBonus.readGatherSpeedBonus())) {
+        if (gatherSpeedModifier != null && !gatherSpeedModifier.equals(UserData.getProfessionSpeedBoost())) {
             gatherSpeedModifier = null;
         }
 
@@ -346,7 +339,7 @@ public class ActiveGather {
 
             // Prevent scanning more than once
             if (isPvpActive == null) {
-                detectModifiers();
+                initialDetectModifiers();
             }
         } else {
             ticks += 1;
@@ -355,16 +348,28 @@ public class ActiveGather {
         return true;
     }
 
-    private void detectModifiers() {
+    private void initialDetectModifiers() {
         gatherXpModifier = null;
         gatherSpeedModifier = null;
         isPvpActive = UserData.isPvpActive();
 
-        // TODO: Read xp from new gu boost UI
-        // Skip when copied over from what was detected in previous gather
-        // if (guildGxpBoostLevel == null) {
-        //     GuildBoostScanner.triggerScan();
-        // }
+        // Skip guidl boost scan when copied over from what was detected in previous gather
+        if (guildGxpBoostLevel == null) {
+            // TODO: Read xp from new gu boost UI, this will only detect level 0 when not in a territory owned by the players guild.
+            GuildBoostScanner.triggerScan(() -> {
+                ProfessionScanner.triggerScan(new NoAction(), () -> {
+                    this.professionLevel = UserData.getProfessionLevel(profession);
+                    this.gatherXpModifier = UserData.getProfessionXpBoost();
+                    this.gatherSpeedModifier = UserData.getProfessionSpeedBoost();
+                });
+            });
+        } else {
+            ProfessionScanner.triggerScan(new NoAction(), () -> {
+                this.professionLevel = UserData.getProfessionLevel(profession);
+                this.gatherXpModifier = UserData.getProfessionXpBoost();
+                this.gatherSpeedModifier = UserData.getProfessionSpeedBoost();
+            });
+        }
     }
 
     
@@ -375,7 +380,11 @@ public class ActiveGather {
 
         // Only do this first iteration
         if (totalXp == null && guildGxpBoostLevel != null) {
-            GuildBoostScanner.triggerScan();
+            GuildBoostScanner.triggerScan(() -> {
+                ProfessionScanner.triggerScan(new NoAction(), () -> {
+                    store();
+                });
+            });
         }
 
         String multiplier_string = m.group(1);
@@ -420,6 +429,5 @@ public class ActiveGather {
     private void setToolDurability(String tooltipLine) {
         Matcher m = TOOL_DURABILITY_PATTERN.matcher(tooltipLine);
         if (m.find()) toolDurability = Integer.parseInt(m.group(1));
-
     }
 }

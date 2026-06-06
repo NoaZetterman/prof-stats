@@ -44,10 +44,6 @@ public class GatherScanner {
 
         if (!itemName.startsWith("\uDAFC\uDC00")) return;
 
-        if(ProfessionScanner.shouldTriggerScan()) {
-            ProfessionScanner.attemptTriggerScan(new NoAction());
-        }
-
         if (SCYTHE_PATTERN.matcher(itemName).find()) {
             detectGather(player, mainHandItem, Profession.FARMING);
         } else if (ROD_PATTERN.matcher(itemName).find()) {

@@ -19,11 +19,17 @@ import net.minecraft.network.chat.Component;
 
 public class ProfessionScanner {
     private static final Pattern PROFESSION_LINE_PATTERN = Pattern.compile("Lv\\.\\s*(\\d+)\\s+([A-Za-z]+)");
+    private static final Pattern EXP_PATTERN = Pattern.compile("Gathering Experience:\\s*([-+]?\\d+)%");
+    private static final Pattern SPEED_PATTERN = Pattern.compile("Gathering Speed:\\s*([-+]?\\d+)%");
+
+
 
     private static final String screenTitle = "\uDAFF\uDFDC\uE003";
 
     private static boolean shouldTriggerScan = true;
     private static boolean scanInProgress = false;
+
+    private static Runnable onScanCompleteCallback = null;
 
     private static PendingAction pendingAction;
 
@@ -71,18 +77,23 @@ public class ProfessionScanner {
         }
     }
 
-    // TODO: This can possibly use the other method of listening to packets (see GuildBoostScanner usage)
     public static void attemptTriggerScan(PendingAction pa) {
         if (!shouldTriggerScan) return;
+        triggerScan(pa, () -> {});
+    }
+
+    public static void triggerScan(PendingAction pa, Runnable callback) {
         shouldTriggerScan = false;
 
         pendingAction = pa;
+        onScanCompleteCallback = callback;
 
         Minecraft minecraft = Minecraft.getInstance();
 
         int compassSlot = 43;
         
         if (minecraft.gameMode != null && minecraft.player != null && scanInProgress == false) {
+            minecraft.player.closeContainer();
             scanInProgress = true;
             AbstractContainerMenu menu = minecraft.player.containerMenu;
 
@@ -92,7 +103,7 @@ public class ProfessionScanner {
                 menu.containerId,
                 compassSlot,
                 0,
-                ClickType.PICKUP,
+                ClickType.CLONE,
                 minecraft.player
             );
         }
@@ -101,8 +112,10 @@ public class ProfessionScanner {
     public static void scanScreen(List<ItemStack> items) {
         ProfessionScanner.syncId = -1;
 
-        ItemStack stack = items.get(17);
-        boolean scanned = parseProfessions(stack);
+        ItemStack professionStack = items.get(17);
+        boolean scanned = parseProfessions(professionStack);
+
+        findIdentifications(items.get(7));
 
         scanInProgress = false;
 
@@ -110,6 +123,17 @@ public class ProfessionScanner {
 
         minecraft.player.closeContainer();
         pendingAction.execute(minecraft);
+
+        // Execute the callback if one was provided
+        if (onScanCompleteCallback != null) {
+            try {
+                onScanCompleteCallback.run();
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                onScanCompleteCallback = null; // Clear it to prevent memory leaks
+            }
+        }
         
         // Try to scan at next opportunity if we failed to find the items this time
         shouldTriggerScan = !scanned;
@@ -138,6 +162,36 @@ public class ProfessionScanner {
 
                 UserData.setProfessionLevel(profession, level);
                 scanned = true; // If we can scan one, we are in the right itemstack and we assume all can be scanned
+            }
+        }
+
+        return scanned;
+    }
+
+    private static boolean findIdentifications(ItemStack itemStack) {
+        if (itemStack.isEmpty()) return false;
+        
+        boolean scanned = false;
+        Minecraft minecraft = Minecraft.getInstance();
+        
+        List<Component> tooltip = itemStack.getTooltipLines(
+            TooltipContext.of(minecraft.level), 
+            minecraft.player, 
+            TooltipFlag.Default.NORMAL
+        );
+
+        UserData.resetProfessionIdentifications();
+        for (Component line : tooltip) {
+            String s = line.getString();
+
+            Matcher expMatcher = EXP_PATTERN.matcher(s);
+            if (expMatcher.find()) {
+                UserData.setProfessionXpBoost(Integer.parseInt(expMatcher.group(1)));
+            }
+
+            Matcher speedMatcher = SPEED_PATTERN.matcher(s);
+            if (speedMatcher.find()) {
+                UserData.setProfessionSpeedBoost(Integer.parseInt(speedMatcher.group(1)));
             }
         }
 

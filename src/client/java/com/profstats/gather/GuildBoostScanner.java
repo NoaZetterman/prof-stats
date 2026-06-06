@@ -17,6 +17,8 @@ public class GuildBoostScanner {
     private static boolean scanInProgress = false;
     private static Instant scanStartedAt;
 
+    private static Runnable onInventoryScanCompleteCallback = null;
+
     private static int syncId = -1;
 
     public static int getSyncId() {
@@ -27,6 +29,15 @@ public class GuildBoostScanner {
         syncId = id;
     }
     public static void stopScan() {
+        if (onInventoryScanCompleteCallback != null) {
+            try {
+                onInventoryScanCompleteCallback.run();
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                onInventoryScanCompleteCallback = null;
+            }
+        }
         scanInProgress = false;
     }
 
@@ -34,12 +45,13 @@ public class GuildBoostScanner {
         return scanInProgress;
     }
 
-    public static void triggerScan() {
+    public static void triggerScan(Runnable callback) {
         Minecraft client = Minecraft.getInstance();
 
         if (client.player != null && client.getConnection() != null && (scanInProgress == false || scanStartedAt.plusSeconds(1).isBefore(Instant.now()))) {
             scanStartedAt = Instant.now();
             scanInProgress = true;
+            onInventoryScanCompleteCallback = callback;
             client.getConnection().sendCommand("guild territory");
         }
     }
@@ -49,6 +61,15 @@ public class GuildBoostScanner {
         ActiveGather.setGuildGxpBoostLevel(boostLevel);
         GuildBoostScanner.syncId = -1;
         scanInProgress = false;
+        if (onInventoryScanCompleteCallback != null) {
+            try {
+                onInventoryScanCompleteCallback.run();
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                onInventoryScanCompleteCallback = null;
+            }
+        }
     }
 
     private static Integer parseGuildXpBoost(ItemStack professionItemStack) {
