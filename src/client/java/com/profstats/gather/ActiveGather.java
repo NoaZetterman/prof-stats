@@ -35,7 +35,7 @@ public class ActiveGather {
 
     private static final Pattern GATHER_COOLDOWN_PATTERN = Pattern.compile("^§\\d+s$");
 
-    private static final Pattern TOOL_TIER_PATTERN = Pattern.compile("Gathering [a-zA-Z]+ T(\\d+)$");
+    private static final Pattern TOOL_TIER_PATTERN = Pattern.compile("[a-zA-Z]+ T(\\d+)$");
     private static final Pattern TOOL_SPEED_PATTERN = Pattern.compile("(\\d+) Gathering Speed");
     private static final Pattern TOOL_DURABILITY_PATTERN = Pattern.compile("Durability (\\d+)\\/(\\d+)$");
 
